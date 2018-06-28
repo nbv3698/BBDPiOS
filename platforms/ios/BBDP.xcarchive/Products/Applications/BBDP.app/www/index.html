@@ -1,0 +1,49 @@
+<html>
+<head>
+<title>BBDP</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet"
+	href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+<script
+	src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+<script
+	src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+	<script type="text/javascript" src="js/FCMPushHandler.js"></script> <!-- 提醒推播 -->
+<script type="text/javascript" src="cordova.js"></script> <!-- Cordova套件 -->			
+<link rel="stylesheet" type="text/css" href="css/frame.css">
+<script>
+	$(document).ready(function() {
+		if(!(window.localStorage.getItem('login'))){
+			window.location.href = 'Login.html';
+		}
+		else {
+			window.location.href = 'Homepage.html';
+		}
+	});	
+</script>
+<style>
+	.vertical-center {
+		min-height: 100%;  /* Fallback for browsers do NOT support vh unit */
+		min-height: 100vh; /* These two lines are counted as one :-)       */
+
+		display: flex;
+		align-items: center;
+	}
+	
+</style>
+</head>
+<body>
+	<div class="col-xs-12">
+		<!--------------------------------------內容----------------------------------------------->
+		<div class="row vertical-center">
+			<div class="col-xs-12" style="color: #FF5E5B; font-size: 3vw;">
+				<center><img class="img-responsive" src="img/logo.png" /></center>
+				<center>Bridge Between Doctor and Patient</center>
+			</div>
+		</div>
+		<!--------------------------------------內容----------------------------------------------->
+	</div>
+</body>
+</html>
+

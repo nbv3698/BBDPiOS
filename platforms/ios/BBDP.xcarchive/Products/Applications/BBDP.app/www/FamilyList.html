@@ -1,0 +1,550 @@
+<html>
+	<head>
+		<title>BBDP</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+		<link rel="stylesheet" type="text/css" href="css/frame.css">
+		<script type="text/javascript" src="js/FCMPushHandler.js"></script> <!-- 提醒推播 -->
+		<script type="text/javascript" src="cordova.js"></script>
+		<script type="text/javascript" charset="utf-8" src="js/FamilyQRCodeScannerHandler.js"></script><!-- 家屬模式掃描QRCode -->
+        <script src="js/b64.js"></script><!-- base64 -->
+		<script>
+			document.addEventListener("backbutton", onBackKeyDown, false); 	//偵測事件  
+			function onBackKeyDown() {  		//返回按鈕    
+				window.location.href = 'Homepage.html';
+			}
+		</script>
+
+		<script>
+			//var serverURL = "http://localhost:8080/BBDPPatient/";
+			var serverURL = "http://140.121.197.130:8004/BBDPPatient/";
+
+			//送出的邀請名單變數
+			var sentInvitationID = [];		//邀請id
+			var sentInvitationName = [];	//邀請姓名
+			var sentInvitationLength;
+
+			//收到的邀請名單變數
+			var invitationID = [];		//邀請id
+			var invitationName = [];	//邀請姓名
+			var invitationLength;
+
+			//家屬名單變數
+			var familyID = [];
+			var kinship = [];
+			var healthtrackingLimit = [];
+			var fileLimit = [];
+			var medicalrecordLimlt = [];
+			var familyName = [];
+			var familyLength;
+
+			$(document).ready(function() {
+				var userID = window.localStorage.getItem('login');
+
+				$("#sentInvitationTitle").empty();
+				$("#sentInvitationList").empty();
+
+				$("#invitationTitle").empty();
+				$("#invitationList").empty();
+
+				$("#familyList").empty();
+
+				//個人資料
+				initialPersonalData(userID);
+				
+				//取得家屬名單
+				$.ajax({
+						type: "GET",
+						url: serverURL+"FamilyServlet",
+						data: {userID:userID, option: "getFamilyList"},
+						dataType: "json",
+														
+						success : function(response){
+							var jsonString = "";
+							familyLength = response.length;
+							if(response.length>0){
+								for(var i = 0; i<response.length; i++){  	
+									familyID[i] = response[i]["familyID"];
+									kinship[i] = response[i]["kinship"];
+									healthtrackingLimit[i] = response[i]["healthtrackingLimit"];
+									fileLimit[i] = response[i]["fileLimit"];
+									medicalrecordLimlt[i] = response[i]["medicalrecordLimlt"];
+									familyName[i] = response[i]["familyName"];
+								}
+								//alert(jsonString);
+								
+								initialFamilyList(response);
+							}
+							setFamilyListTitle()
+						},	 
+						error : function(){}
+				});
+
+				//取得送出的邀請名單
+				$.ajax({
+					type: "GET",
+					url: serverURL+"FamilyServlet",
+					data: {userID:userID, option: "getSentInvitationList"},
+					dataType: "json",
+														
+					success : function(response){
+						var jsonString = "";
+						sentInvitationLength = response.length;
+						if(response.length>0){
+							for(var i = 0; i<response.length; i++){  	
+								jsonString += "familyID:" +response[i]["familyID"]+"\n"
+											+ "name:" +response[i]["name"]+"\n";
+								sentInvitationID[i] = response[i]["familyID"];
+								sentInvitationName[i] = response[i]["name"];													
+							}
+							//alert(jsonString);
+							$("#sentInvitationTitle").append("送出的家屬邀請");
+							initialSentInvitationList(response);						
+						}
+
+						setFamilyListTitle();
+						
+					},	 
+					error : function(){}
+				});
+
+
+				//取得邀請名單
+				$.ajax({
+						type: "GET",
+						url: serverURL+"FamilyServlet",
+						data: {userID:userID, option: "getInvitationList"},
+						dataType: "json",
+														
+						success : function(response){
+							var jsonString = "";
+							invitationLength = response.length;
+							if(response.length>0){
+								for(var i = 0; i<response.length; i++){  	
+									jsonString += "userID:" +response[i]["userID"]+"\n"
+												+ "name:" +response[i]["name"]+"\n";
+									invitationID[i] = response[i]["userID"];
+									invitationName[i] = response[i]["name"];													
+								}
+								//alert(jsonString);
+								$("#invitationTitle").append("新的家屬邀請");	
+								initialInvitationList(response);
+							}
+							
+							setFamilyListTitle();
+						},	 
+						error : function(){}
+				});				
+			});
+
+			//設定個人資料
+			function initialPersonalData(userID){
+				//大頭照
+				$("#personalPicture").empty();
+				$("#personalPicture").append("<img src='"+serverURL +"ProfilePictureServlet?option=getProfilePicture&patientID="+userID+"' width='100%' height='auto' onerror='failToLoadPersonalPicture();'>");
+
+				//取得自己的姓名
+				$.ajax({
+					type: "GET",
+					url: serverURL+"FamilyServlet",
+					data: {option : "getPatientNameByID", familyID : userID},
+					dataType: "text",
+																		
+					success : function(response){
+						$("#personalName").empty();
+						$("#personalName").append(response);			
+					},
+					error : function(){
+						console.log("server沒有回應");
+					}
+				});
+			}
+
+			//設定"我的家屬"標題
+			function setFamilyListTitle(){
+				//alert("familyLength : "+familyLength+" sentInvitationLength : "+sentInvitationLength+" invitationLength : "+invitationLength);
+				$("#familyListTitle").empty();
+				if(familyLength==0 && sentInvitationLength==0 && invitationLength==0){
+					$("#familyListTitle").append("目前尚未加入家屬，請按+加入家屬");
+				}		
+				else if(familyLength>0){		
+					$("#familyListTitle").append("我的家屬");
+				}
+			}
+
+			//家屬名單
+			function initialFamilyList(response){
+				$("#familyList").empty();
+				var list = "";
+				var displayName = "";
+				for(var i = 0; i<response.length; i++){
+					//顯示關係
+					if(kinship[i].length>0){
+						displayName = kinship[i];
+					}
+					else{
+						displayName = familyName[i];
+					}
+
+					list += "<div class='col-xs-12 col-sm-12'>" +	
+								"<div class='row' style='background:#FFFDDB; border:#767676 0.2vw solid;' onclick='showLimit("+i+");'>" +
+									"<div id='familyPicture"+i+"' class='col-xs-3 col-sm-3' style='padding-top:5vw;padding-bottom:5vw;'>" +
+										"<img src='" + serverURL +"ProfilePictureServlet?option=getProfilePicture&patientID="+familyID[i]+"' onerror='failToLoadFamilyPicture("+i+");' width='100%' height='auto'>" +
+									"</div>" +
+									"<div class='col-xs-9 col-sm-9' style='padding-top:5vw;'>" +
+										"<p class='basicText' style='color:#000000;'>"+ displayName +"</p>" +
+									"</div>" +
+								"</div>" +
+							"</div>";
+				}
+				$("#familyList").append(list);	
+			}
+
+			//收到的邀請名單
+			function initialInvitationList(response){
+				$("#invitationList").empty();
+				var list = "";
+				for(var i = 0; i<response.length; i++){  										
+					list += "<div class='col-xs-12 col-sm-12'>" +	
+								"<div class='row' style='background:#FFFDDB; border:#767676 0.2vw solid;' onclick='confirmInvitation("+i+");'>" +
+									"<div id='invitationPicture"+i+"' class='col-xs-3 col-sm-3' style='padding-top:5vw;padding-bottom:5vw;'>" +
+										"<img src='" + serverURL +"ProfilePictureServlet?option=getProfilePicture&patientID="+invitationID[i]+"' onerror='failToLoadInvitationPicture("+i+");' width='100%' height='auto'>" +
+									"</div>" +
+									"<div class='col-xs-9 col-sm-9' style='padding-top:5vw;'>" +
+										"<p class='basicText' style='color:#000000'>"+ invitationName[i] +"</p>" +
+									"</div>" +
+								"</div>" +
+							"</div>";
+				}		
+				$("#invitationList").append(list);		
+			}
+
+			//送出的邀請名單
+			function initialSentInvitationList(response){
+				$("#sentInvitationList").empty();
+				var list = "";
+				for(var i = 0; i<response.length; i++){										
+					list += "<div class='col-xs-12 col-sm-12'>" +
+								"<div class='row' style='background:#FFFDDB; border:#767676 0.2vw solid;' onclick='confirmCancelSentInvitation("+i+");'>" +
+									"<div id='sentInvitationPicture"+i+"' class='col-xs-3 col-sm-3' style='padding-top:5vw;padding-bottom:5vw;'>" +
+										"<img src='" + serverURL +"ProfilePictureServlet?option=getProfilePicture&patientID="+sentInvitationID[i]+"' onerror='failToLoadSentInvitationPicture("+i+");' width='100%' height='auto'>" +
+									"</div>" +
+									"<div class='col-xs-9 col-sm-9' style='padding-top:5vw;'>" +
+										"<p class='basicText' style='color:#000000;'>"+ sentInvitationName[i] +"</p>" +
+									"</div>" +
+								"</div>" +
+							"</div>";
+				}		
+				$("#sentInvitationList").append(list);
+			}
+
+			function failToLoadPersonalPicture(){
+				$("#personalPicture").empty();
+				$("#personalPicture").append("<img src='img/user.png' width='100%' height='auto'>");
+			}
+
+			function failToLoadFamilyPicture(i){
+				$("#familyPicture" + i).empty();
+				$("#familyPicture" + i).append("<img src='img/user.png' width='100%' height='auto'>");
+			}
+
+			function failToLoadInvitationPicture(i){
+				$("#invitationPicture" + i).empty();
+				$("#invitationPicture" + i).append("<img src='img/user.png' width='100%' height='auto'>");
+			}
+
+			function failToLoadSentInvitationPicture(i){
+				$("#sentInvitationPicture" + i).empty();
+				$("#sentInvitationPicture" + i).append("<img src='img/user.png' width='100%' height='auto'>");
+			}
+
+			var confirmIndex;
+			//接受邀請
+			function confirmInvitation(i){
+				confirmIndex = i;
+				navigator.notification.confirm(invitationName[i]+'向您發送家屬邀請', acceptInvitation, '家屬邀請', '加入,拒絕');			
+			}
+
+			function acceptInvitation(button){
+				var userID = window.localStorage.getItem('login');	//接受者id
+				if( button==1 ){	//接受邀請
+					$.ajax({
+						type: "GET",
+						url: serverURL+"FamilyServlet",
+						data: {option : "acceptInvitation", recipient : userID, accepted : invitationID[confirmIndex]},
+						dataType: "text",
+														
+		 				success : function(){
+							navigator.notification.alert('已接受' + invitationName[confirmIndex]+'的家屬邀請',null,'提醒','確定');
+							location.reload();	//重新整理				
+						},
+						error : function(){
+							navigator.notification.alert('Server沒有回應',null,'提醒','確定');
+						}
+					});		
+				}
+				else{		//拒絕邀請
+					$.ajax({
+						type: "GET",
+						url: serverURL+"FamilyServlet",
+						data: {option : "refuseInvitation", userID : userID, familyID : invitationID[confirmIndex]},
+						dataType: "text",
+														
+		 				success : function(){
+							//navigator.notification.alert('已接受' + invitationName[confirmIndex]+'的家屬邀請',null,'提醒','確定');
+							location.reload();	//重新整理				
+						},
+						error : function(){
+							navigator.notification.alert('Server沒有回應',null,'提醒','確定');
+						}
+					});
+				}
+			}
+
+
+			//收回送出的邀請
+			var cancelInvitationIndex;
+			function confirmCancelSentInvitation(i){
+				cancelInvitationIndex = i;
+				navigator.notification.confirm('取消向'+sentInvitationName[i]+'發送的家屬邀請', cancelSentInvitation, '提示', '確定,取消');
+			}
+
+			function cancelSentInvitation(button){
+				if( button==1 ){
+				var userID = window.localStorage.getItem('login');
+				$.ajax({
+						type: "GET",
+						url: serverURL+"FamilyServlet",
+						data: {option : "refuseInvitation", userID : userID, familyID : sentInvitationID[cancelInvitationIndex]},
+						dataType: "text",
+														
+		 				success : function(){
+							location.reload();	//重新整理				
+						},
+						error : function(){
+							navigator.notification.alert('Server沒有回應',null,'提醒','確定');
+						}
+					});
+				}
+			}
+
+			var clickLimitIndex;
+			//顯示權限
+			function showLimit(i){
+				clickLimitIndex = i;
+				var displayName = "";
+
+				//顯示關係
+				if(kinship[i].length>0){
+					displayName = kinship[i];
+				}
+				else{
+					displayName = familyName[i];
+				}
+
+				$("#modalFamilyName").empty();
+				$("#modalFamilyName").append(displayName);
+
+				//設定按鈕
+				if(fileLimit[i]==1){
+					$("#fileLimitSwitch").prop('checked', true);
+				}
+				else{
+					$("#fileLimitSwitch").prop('checked', false);
+				}
+
+				if(healthtrackingLimit[i]==1){
+					$("#healthtrackingLimitSwitch").prop('checked', true);
+				}
+				else{
+					$("#healthtrackingLimitSwitch").prop('checked', false);
+				}
+
+				if(medicalrecordLimlt[i]==1){
+					$("#medicalrecordLimltSwitch").prop('checked', true);
+				}
+				else{
+					$("#medicalrecordLimltSwitch").prop('checked', false);
+				}
+
+				$("#familyModal").modal("show");
+			}
+
+			//Modal消失時變更權限
+			$(document).ready(function() {
+			  $("#familyModal").on("hidden.bs.modal", function() {
+			  	editLimit();
+			  });
+			});
+
+			//修改權限
+			function editLimit(){
+				if(clickLimitIndex != -1){	//確認是否已刪好友
+				  	if($(fileLimitSwitch).is(":checked")){
+				  		fileLimit[clickLimitIndex]=1;
+				  	}
+				  	else {
+				  		fileLimit[clickLimitIndex]=0;
+				  	}
+
+				  	if($(healthtrackingLimitSwitch).is(":checked")){
+				  		healthtrackingLimit[clickLimitIndex]=1;
+				  	}
+				  	else {
+				  		healthtrackingLimit[clickLimitIndex]=0;
+				  	}
+
+				  	if($(medicalrecordLimltSwitch).is(":checked")){
+				  		medicalrecordLimlt[clickLimitIndex]=1;
+				  	}
+				  	else {
+				  		medicalrecordLimlt[clickLimitIndex]=0;
+				  	}
+
+				  	var userID = window.localStorage.getItem('login');
+				  	$.ajax({
+							type: "GET",
+							url: serverURL+"FamilyServlet",
+							data: {option : "editLimit",
+									userID : userID,
+									familyID : familyID[clickLimitIndex],
+									healthtrackingLimit : healthtrackingLimit[clickLimitIndex], 
+									fileLimit : fileLimit[clickLimitIndex],
+									medicalrecordLimlt : medicalrecordLimlt[clickLimitIndex]
+									},
+							dataType: "text",
+															
+			 				success : function(){
+								//location.reload();	//重新整理				
+							},
+							error : function(){
+								//navigator.notification.alert('Server沒有回應',null,'提醒','確定');
+							}
+					});
+				}
+			}
+
+			function confirmDeleteFamily(){
+				navigator.notification.confirm('確定刪除該家屬嗎？',deleteFamily,'提醒','確定,取消');		
+			}
+
+			//刪除家屬
+			function deleteFamily(button){
+				if( button==1 ){
+				var userID = window.localStorage.getItem('login');
+				$.ajax({
+						type: "GET",
+						url: serverURL+"FamilyServlet",
+						data: {option : "refuseInvitation", userID : userID, familyID : familyID[clickLimitIndex]},
+						dataType: "text",
+														
+		 				success : function(){
+		 					clickLimitIndex = -1;
+							//隱藏modal
+							$("#familyModal").modal("hide");
+							location.reload();	//重新整理				
+						},
+						error : function(){
+							navigator.notification.alert('Server沒有回應',null,'提醒','確定');
+						}
+					});
+				}
+			}
+
+			//查看內容
+			function viewContent(){
+				editLimit();
+				
+				var userID = window.localStorage.getItem('login');
+				$("#familyModal").modal("hide");
+
+				window.location.href = "Family.html?familyID="+familyID[clickLimitIndex];
+			}
+		</script>
+	</head>
+	<body>
+
+		<div class=" text-center title">
+			<a href="Homepage.html"><img src="img/backButton.png"  style="float:left;width:10vw;height:10vw;"></a>				
+			<img src="img/family.png" style="vertical-align:middle;width:10vw;height:10vw;">
+			<h1  style="display:inline;">我的家屬</h1>
+			<a onclick="familyScan();"><img src="img/addButton.png" style="float:right;width:10vw;height:10vw;"></a>			
+		</div>
+		<div style="height:15vw;"></div>
+
+<!---------------------------------------------------------------------------------個人資料------------------------------------------------------------------------------------------>	
+		<div style="background-color:#ABABAB;"><span style="margin-left:1.5vw;color:#FFFFFF;font-size:5vw">個人資料</span></div>
+		<div class='col-xs-12 col-sm-12'>
+			<div class='row' style="background:#FFFDDB; border:#767676 0.2vw solid">
+				<div id="personalPicture" class='col-xs-3 col-sm-3' style='padding-top:5vw;padding-bottom:5vw;' >
+					<!--------------------------------大頭照
+					<img src="img/patientPhoto/A123456789.png" width="100%" height="auto">
+					-------------------------------------->
+				</div>
+				<div class='col-xs-6 col-sm-6' style='padding-top:5vw;'>
+					<!----------------------------------------姓名-------------------------------------->
+					<p id="personalName" class="basicText" style="color:#000000;"></p>
+				</div>
+				<div class='col-xs-3 col-sm-3' style='padding-top:5vw;padding-bottom:5vw;' >
+					<a href="QRcode.html"><img src="img/qr-code.png" width="100%" height="auto"></a>
+				</div>
+			</div>
+		</div>
+<!---------------------------------------------------------------------------------送出的家屬邀請------------------------------------------------------------------------------------------>	
+		<div style="background-color:#ABABAB;"><span id="sentInvitationTitle" style="margin-left:1.5vw;color:#FFFFFF;font-size:5vw"><!----送出的家屬邀請----></span></div>
+			<div id="sentInvitationList"></div>
+
+<!---------------------------------------------------------------------------------新的家屬邀請------------------------------------------------------------------------------------------>
+		<div style="background-color:#ABABAB;"><span id="invitationTitle" style="margin-left:1.5vw;color:#FFFFFF;font-size:5vw"><!----新的家屬邀請----></span></div>
+
+			<div id="invitationList">
+				
+			</div>
+
+<!--------------------------------------------------------------------------------------我的家屬------------------------------------------------------------------------------------------------>
+		<div style="background-color:#ABABAB;"><span id="familyListTitle" style="margin-left:1.5vw;color:#FFFFFF;font-size:5vw"><!----我的家屬----></span></div>
+			<div id="familyList">
+				
+			</div>
+
+		<!--------------------------------------如果有家屬邀請才顯示Button----------------------------------------------->	
+		<div>
+			<div style="height:3vw;"></div>
+		</div>
+		
+		<!-- Modal -->
+		<div id="familyModal" class="modal fade" role="dialog">
+		  <div class="modal-dialog">
+
+			<!-- Modal content-->
+			<div class="modal-content">
+				<div class="modal-header">
+					<button type="button" class="close" data-dismiss="modal" style="outline: none;">&times;</button>
+					<p class="modal-title basicText" id="modalFamilyName"></p>
+				</div>
+				<div class="modal-body" style="text-align:center">
+					<p class="basicText" style="color:#C9C9C9">家屬權限設定(對方看得到您的)</p>
+					<br>
+					<input id="fileLimitSwitch" type="checkbox" checked>
+					<label class="basicText" for="fileLimitSwitch" style="vertical-align:middle;">&nbsp;檔案內容</label>
+					<br><br>
+					<input id="healthtrackingLimitSwitch" type="checkbox" checked>
+					<label class="basicText" for="healthtrackingLimitSwitch" style="vertical-align:middle;">&nbsp;健康追蹤</label>
+					<br><br>
+					<input id="medicalrecordLimltSwitch" type="checkbox" checked>
+					<label class="basicText" for="medicalrecordLimltSwitch" style="vertical-align:middle;">&nbsp;病歷內容</label>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-default basicText" style="outline: none;" data-dismiss="" onclick="viewContent();">查看內容</button>
+					<button type="button" class="btn btn-default basicText" style="float:left;outline: none;" data-dismiss="" onclick="confirmDeleteFamily();">刪除家屬</button>
+				</div>
+			</div>
+
+		  </div>
+		</div>
+	</body>
+</html>
+

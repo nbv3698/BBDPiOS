@@ -1,0 +1,203 @@
+<html>
+	<head>
+		<title>BBDP</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+		<script type="text/javascript" src="js/FCMPushHandler.js"></script> <!-- 提醒推播 -->
+		<script type="text/javascript" src="js/initialFamily.js"></script>	<!-- 設定家屬大頭貼跟稱謂 -->
+		<script type="text/javascript" src="cordova.js"></script> <!-- Cordova套件 -->		
+		<link rel="stylesheet" type="text/css" href="css/frame.css">
+		<script>
+			document.addEventListener("backbutton", onBackKeyDown, false); 	//偵測事件  
+			function onBackKeyDown() {  		//返回按鈕    
+				backToFamily();
+			}			
+		</script>
+		<script>
+			//var serverURL = "http://140.121.197.130:8004/BBDPPatient/";
+			var serverURL = "http://localhost:8080/BBDPPatient/";
+			var fileServerURL = "http://localhost:8080/BBDPFolderServer/";
+			
+			var url;
+			var familyID;
+			var fileLimit;
+			var imgSmallArray = [];
+			var videoArray = [];
+			var timeArray = [];
+			var descriptionArray = [];
+			var fileAmount;
+			
+
+			$(document).ready(function() {
+				url = decodeURI(window.location.href);
+				familyID = url.split("&")[0].split("=")[1];
+				fileLimit= url.split("&")[1].split("=")[1];
+				if(fileLimit==1){
+					initialPhotoList();
+				}
+			});
+
+			//初始化列表
+			function initialPhotoList(){
+				$.ajax({
+					type: "GET",
+					url: fileServerURL+"FolderServlet",
+					data: {patientID: familyID, option: "getAllFileInfo"},
+					dataType: "json",
+													
+					success : function(response){
+						fileAmount = response.length;
+						for(var i = 0; i<fileAmount; i++){  	
+							timeArray[i] = response[i]["time"];
+							descriptionArray[i] = response[i]["description"];
+							imgSmallArray[i] = fileServerURL + "FolderServlet?patientID=" + familyID + "&time=" + timeArray[i] + "&option=getSmallPhoto";
+							videoArray[i] = response[i]["video"];
+						}
+						
+						showPhotoList(response);	
+					},
+			 
+					error : function(){
+						navigator.notification.alert('Server沒有回應',function(){},'提醒','確定');
+					}
+				});
+			}
+
+			//相片列表
+			function showPhotoList(response){
+				$("#photoList").empty();		
+				var output = "";
+				
+				for(var i = 0; i<response.length; i++){  										
+					if(videoArray[i]=='null'||videoArray[i]==''){		//顯示照片
+						output += photoItem(i);
+					}else{	//顯示影片
+						output += videoItem(i);
+					}		
+				}		
+				$("#photoList").append(output);			
+			}
+			
+			//相片項目
+			function photoItem(i){
+				var description = descriptionArray[i];
+							
+				var item = "<div class='col-xs-12 col-sm-12'>" +
+								"<div onclick = 'displayFile("+i+")' class='row' style='background:#FFFDDB; border:#767676 0.2vw solid;'>" +
+									"<div class='col-xs-3 col-sm-3' style='padding-top:5vw;padding-bottom:5vw;'>" +
+										"<img id='photo' src='" + imgSmallArray[i] + "' width='100%' height='auto'>" +
+									"</div>" +
+									"<div class='col-xs-9 col-sm-9' style='padding-top:4vw;'>" +
+										"<p class='basicText' style='color:#000000;display : inline-block;overflow : hidden;text-overflow : ellipsis;white-space : nowrap;width : 95%;'>" + description + "</p>" +
+										"<p class='basicText' style='color:C9C9C9;'>"+ timeArray[i].substr(0,19) + "</p>" +
+									"</div>" +
+								"</div>" +
+							"</div>";						
+				
+				return item;
+			}
+
+			//影片項目
+			function videoItem(i){
+				var description = descriptionArray[i];
+
+				var item = "<div class='col-xs-12 col-sm-12'>" +
+								"<div onclick = 'displayFile("+i+")' class='row' style='background:#FFFDDB; border:#767676 0.2vw solid;'>" +
+									"<div class='col-xs-3 col-sm-3' style='padding-top:5vw;padding-bottom:5vw;'>" +
+										"<img id='photo' src='" + imgSmallArray[i] + "' width='100%' height='auto'>" +
+									"</div>" +
+									"<div class='col-xs-9 col-sm-9' style='padding-top:4vw;'>" +
+										"<p class='basicText' style='color:#000000;display : inline-block;overflow : hidden;text-overflow : ellipsis;white-space : nowrap;width : 95%;'>" + description + "</p>" +
+										"<p class='basicText' style='color:C9C9C9;'>" + timeArray[i].substr(0,19) +"</p>" +			
+									"</div>" +
+								"</div>" +
+							"</div>";
+										
+				return item;
+			}
+
+	 		//顯示檔案
+			function displayFile(i) {
+				window.location.href = "FamilyFolder-view.html?familyID="+familyID+"&time="+timeArray[i];
+			}
+
+		
+
+	        function changeType(){
+	        	$("#photoList").empty();
+	        	var output="";
+	        	if($('#selectType option:selected').val()=="all"){
+	        		for(var i = 0; i<fileAmount; i++){
+						if(videoArray[i]=='null'||videoArray[i]==''){		//顯示照片
+							output += photoItem(i);
+						}
+						else{	//顯示影片
+							output += videoItem(i);
+						}		
+					}		
+					
+				}
+				else if($('#selectType option:selected').val()=="photo"){
+	        		for(var i = 0; i<fileAmount; i++){
+						if(videoArray[i]=='null'||videoArray[i]==''){		//顯示照片
+							output += photoItem(i);
+						}
+					}		
+				}
+				else if($('#selectType option:selected').val()=="video"){
+	        		for(var i = 0; i<fileAmount; i++){
+						if(videoArray[i]!='null'&&videoArray[i]!=''){		//顯示照片
+							output += videoItem(i);
+						}
+					}		
+				}
+				$("#photoList").append(output);	
+	        }
+
+		</script>
+		<style type="text/css">
+			#photo{
+				height:18vw;
+				width:18vw;
+				object-fit: cover;
+			}
+		</style>
+	</head>
+	<body>
+	
+		<div class="text-center title">
+			<a onclick="backToFamily()"><img src="img/backButton.png"  style="float:left;width:10vw;height:10vw;"></a>				
+			<img src="img/family.png" style="vertical-align:middle;width:10vw;height:10vw;">
+			<h1  style="display:inline;">我的家屬</h1>
+			<img src="img/background.png" style="float:right;width:10vw;height:10vw;">		
+		</div>		
+		<div style="height:15vw;"></div>		
+		<div class='col-xs-12 col-sm-12'>
+			<div class='row familyTitle' style='background:#FFCBCB;'>
+				<!----------------------------------------大頭照-------------------------------------->
+				<div id="familyPicture" class="col-xs-3 col-sm-3" style="padding-top:5vw;padding-bottom:5vw;">
+					<img src="img/familyBackground.png" width="100%" height="auto">
+				</div>			
+				<div class='col-xs-9 col-sm-9' style='padding-top:5vw;'>
+					<p id="displayName" style="font-size:5vw;color:#000000"></p>
+				</div>
+			</div>
+		</div>		
+		<div style="height:30vw;"></div>
+		<div style="height:6vw;"></div>
+		<!----------------------------------------選單-------------------------------------->
+		<select id="selectType" class="form-control inputLg" onChange="changeType()" style="display:inline;margin-left:4vw;width:65vw;">
+			<option value="all">顯示全部</option>
+			<option value="photo">圖片</option>
+			<option value="video">影片</option>
+		</select>
+		<div style="height:6vw;"></div>
+		<!--------------------------------------------------------------------檔案列表---------------------------------------------------------->
+		<div id = "photoList">
+		</div>
+	</body>
+</html>
+

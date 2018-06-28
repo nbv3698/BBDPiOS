@@ -1,0 +1,421 @@
+<html>
+	<head>
+		<title>BBDP</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+		<script type="text/javascript" src="js/FCMPushHandler.js"></script> <!-- 提醒推播 -->
+		<!-- <script type="text/javascript" src="js/RemindPushHandler.js"></script> 傳送提醒推播 -->
+		<script type="text/javascript" charset="utf-8" src="js/pushToBBDPDoctor.js"></script> <!-- 傳送提醒推播至醫生端 -->
+		<link rel="stylesheet" type="text/css" href="css/frame.css">
+		<!------------------------------cordova相關js---------------------------------------->
+        <script type="text/javascript" charset="utf-8" src="js/MediaCapture.js"></script>
+		<script type="text/javascript" src="cordova.js"></script> <!-- Cordova套件 -->			
+		<!------------------------------上傳js---------------------------------------->
+        <script type="text/javascript" charset="utf-8">
+			document.addEventListener("backbutton", onBackKeyDown, false); 	//偵測事件  
+			function onBackKeyDown() {  		//返回按鈕    
+				window.history.go(-1);
+			}
+			$(document).ready(function() {
+				document.addEventListener("deviceready", onDeviceReady, false); 	//偵測事件
+				function onDeviceReady() {
+					pictureSource=navigator.camera.PictureSourceType;
+					destinationType=navigator.camera.DestinationType;	
+				}      
+				$.ajax({
+						type: "GET",
+						url: serverURL + "GetInfoServlet",
+						data: {patientID: window.localStorage.getItem('login'), option: "getPatientName"},
+						dataType: "text",
+													
+						success : function(response){
+							patientName = response;
+							console.log(patientName);
+						},
+			 
+						error : function(){
+						}
+				});
+				initialHospital();
+			});
+
+			//遠端網址
+			var serverURL = "http://140.121.197.130:8004/BBDPPatient/";
+			//var serverURL = "http://localhost:8080/BBDPPatient/";
+		
+			var fileServerURL = "http://140.121.197.130:8600/BBDPFolderServer/";
+			//var fileServerURL = "http://localhost:8080/BBDPFolderServer/";
+						
+			var pictureSource;
+            var destinationType;
+			
+			var patientID = window.localStorage.getItem('login');
+			var doctorID = "";
+			var time;
+			var selectPictrue = "";		//圖片路徑
+			var selectVideo = "";		//影片路徑
+			var descriptionString;		//描述
+			var patientName = "";
+			
+			var videoFormat = "";
+			var doctorInfoJsonString = "";
+			
+            //取得相簿中的相片
+            function getPhoto(source) {
+            	selectPictrue = "";
+
+				var previewImage = document.getElementById('previewImage');
+				previewImage.style.display = 'block';
+				previewImage.src = "img/imageUpload.png";
+				
+                navigator.camera.getPicture(onPhotoURISuccess,
+					function(error){console.log("取得相片失敗！")},
+					{ quality: 50,
+				destinationType: Camera.DestinationType.FILE_URI,
+				sourceType : Camera.PictureSourceType.PHOTOLIBRARY ,
+				encodingType: Camera.EncodingType.JPEG,
+				mediaType:Camera.MediaType.PICTURE,
+				popoverOptions : CameraPopoverOptions,
+				});
+            }
+ 
+            //取得照片成功後
+            function onPhotoURISuccess(imageURI) {
+                window.resolveLocalFileSystemURI(imageURI, 
+					function(fileEntry) {
+						fileEntry.file(function(fileObj) {
+							console.log("Size = " + fileObj.size);
+							
+							if(fileObj.size>5242880){	//5MB
+								navigator.notification.alert('檔案大小請勿超過5MB',function(){imageURI = "";},'提醒','確定');	
+							}
+							else{	//顯示照片
+								var previewImage = document.getElementById('previewImage');
+								previewImage.style.display = 'block';
+								previewImage.src = imageURI;
+							}					
+						},
+						function (error) {});
+					}, function (error) {}
+				);
+                console.log("照片路徑:" + imageURI);	//照片路徑
+				selectPictrue = imageURI;	//設定照片路徑
+				selectVideo = "";				
+            }
+			
+			 //取得相簿中的影片
+            function getVideo(source) {
+            	selectVideo = "";
+            	
+				var previewImage = document.getElementById('previewImage');
+				previewImage.style.display = 'block';
+				previewImage.src = "img/imageUpload.png";
+			
+                navigator.camera.getPicture(onVideoURISuccess,
+					function(error){console.log("取得影片失敗！")},
+					{ 	quality: 50,
+						destinationType: Camera.DestinationType.FILE_URI,
+						sourceType : Camera.PictureSourceType.PHOTOLIBRARY ,
+						mediaType:Camera.MediaType.VIDEO,
+						popoverOptions : CameraPopoverOptions,
+					 });
+            }
+			
+			//取得影片成功後
+            function onVideoURISuccess(videoURI) {
+				console.log("影片格式:" + videoURI.substr(videoURI.lastIndexOf('.') + 1));				
+                console.log("影片路徑:" + videoURI);
+				
+				videoFormat = videoURI.substr(videoURI.lastIndexOf('.') + 1);
+				//檢查格式 (html5video支援格式：mp4 mov ogv webm)
+				if(videoFormat == 'mp4' || videoFormat == 'mov' || videoFormat == 'MOV'){
+					previewImage.style.display = 'block';
+					previewImage.src = "img/uploadOK.png";
+					selectVideo = videoURI;	//設定影片路徑
+					selectPictrue = "";
+				}
+				else{
+					navigator.notification.alert('不支援'+videoFormat+'格式之影片',function(){},'提醒','確定');
+				}
+                
+            }
+ 
+			//上傳檔案
+			function upload(fileURL, SERVER) {
+				//上傳按鈕不可按
+				$('#uploadBtn').empty();
+				$('#uploadBtn').append("上傳中...");
+				$('#uploadBtn').attr('disabled', true);		
+				//上傳成功           
+				var success = function (r) {
+					//推播給醫生
+					var message = patientName + "傳送了一個檔案";										
+					remindPush(doctorID, patientID, patientName, message, "EditPatientFolder.html?time="+time, "folder");
+					
+					//推播給家屬
+					$.ajax({
+						type: "GET",
+						url: serverURL+"FamilyServlet",
+						data: {patientID: patientID, option: "sendFilePush", time: time},
+												
+						success : function(){
+							console.log("已傳送推播給家屬");
+						},
+		 
+						error : function(){
+							console.log("傳送推播給家屬時發生錯誤");
+						}
+					});					
+					
+					//SpinnerDialog
+					if(device.platform=="Android"){
+						SpinnerDialog.hide();
+					}
+					else if(device.platform=="iOS"){
+						window.plugins.spinnerDialog.hide();
+					}
+					
+					navigator.notification.alert('上傳成功',function(){},'提醒','確定');										
+					window.location.href = 'Folder.html';
+				}
+ 
+				//上傳失敗
+				var fail = function (error) {
+					var previewImage = document.getElementById('previewImage');
+					previewImage.style.display = 'block';
+					previewImage.src = "img/imageUpload.png";
+					
+					//SpinnerDialog
+					if(device.platform=="Android"){
+						SpinnerDialog.hide();
+					}
+					else if(device.platform=="iOS"){
+						window.plugins.spinnerDialog.hide();
+					}
+					
+					navigator.notification.alert('上傳失敗',function(){},'提醒','確定');
+					window.location.href = 'UploadFile.html';
+				}
+
+				var options = new FileUploadOptions();	
+				options.fileName = fileURL.substr(fileURL.lastIndexOf('/') + 1);
+				//options.mimeType = "image/jpeg";
+				//options.chunkedMode = true;	//設置 chunkedMode 選項 false ，防止將上載到 Nginx 伺服器的問題。
+		
+				//上傳參數
+				var params = new Object();
+				params.time = time;
+				params.patientID = patientID;
+				params.doctorID = doctorID;
+				params.description = descriptionString;
+				params.videoFormat = videoFormat;
+				params.doctorInfoJsonString = doctorInfoJsonString;
+				console.log(doctorInfoJsonString);
+				if(selectPictrue.length > 0){
+					params.type = "picture";	//String fieldName = item.getFieldName();
+				}
+				else if(selectVideo.length > 0){
+					params.type = "video";
+				}
+				options.params = params;			
+				
+				var ft = new FileTransfer();
+				ft.onprogress = function (e) {
+					console.info(e);
+					if (e.lengthComputable) {
+						console.log('上傳進度：' + e.loaded / e.total);
+					}
+					//SpinnerDialog
+					if(device.platform=="Android"){
+						SpinnerDialog.show("上傳中", "請稍後...", function(){});
+					}
+					else if(device.platform=="iOS"){
+						window.plugins.spinnerDialog.show("上傳中", "請稍後...", function(){});
+					}
+				}				
+				ft.upload(fileURL, encodeURI(SERVER), success, fail, options);				
+			};
+		  
+			//上傳按鈕
+			$(document).ready(function(){      	 
+				$("#uploadBtn").click(function(){
+				
+					var today=new Date();					
+					time = today.getFullYear() + '-'+ (today.getMonth()+1) + '-' + today.getDate() + ' ' 
+					+ today.getHours() + ':' + today.getMinutes() + ':' + today.getSeconds();
+				
+					descriptionString = $('#description').val();
+					doctorID = $('#doctor').val();
+					var doctorName = $("#doctor option[value='"+$('#doctor').val()+"']").text()
+					
+					doctorInfoJsonString = '{"hospital":"'+$('#hospital').val()+'", "department":"'+$('#department').val()+'", "name":"'+doctorName+'"}';
+					//alert(doctorInfoJsonString);				
+					
+					if($('#hospital').val().length == 0){						
+						navigator.notification.alert('請選擇醫院',function(){},'提醒','確定');
+					}
+					else if($('#department').val().length == 0){						
+						navigator.notification.alert('請選擇科別',function(){},'提醒','確定');
+					}
+					else if($('#doctor').val().length == 0){
+						navigator.notification.alert('請選擇醫師',function(){},'提醒','確定');
+					}
+					else if($('#description').val().trim() == ""){
+						navigator.notification.alert('請輸入檔案內容描述',function(){},'提醒','確定');
+					}
+					else if($('#description').val().length > 200){
+						navigator.notification.alert('檔案內容描述請勿超過200個字',function(){},'提醒','確定');
+					}											
+					else if(selectPictrue.length == 0 && selectVideo.length == 0){						
+						navigator.notification.alert('請選擇照片或影片',function(){},'提醒','確定');
+					}		
+					else if(selectPictrue.length > 0){									
+						upload(selectPictrue, fileServerURL + "UploadFileServlet");		//上傳照片
+					}					
+					else if(selectVideo.length > 0){
+						upload(selectVideo, fileServerURL + "UploadVideoServlet");		//上傳影片
+					}
+					
+				});
+			});
+
+		  	//初始化醫院選單
+			function initialHospital(){
+				$.ajax({
+						url : serverURL+"GetInfoServlet",
+						data : {option : "searchHospital"},
+						dataType : "json",
+							
+						success : function(response) {
+							$("#hospital").empty();
+							var option="<option value=''>請選擇</option>";
+							for(var i=0;i<response.length;i++){
+								option+="<option value='"+response[i]["hospital"]+"'>"+response[i]["hospital"]+"</option>";
+							}	
+							
+							$("#hospital").append(option);
+							$('#hospital').attr('disabled', false);		//醫院可選
+						},
+						error : function() {
+							console.log("錯誤訊息");
+						}
+				});	
+			}
+
+			//醫院選單		
+			function changeHospital(){
+				if($('#hospital option:selected').val()){
+					$.ajax({
+						url : serverURL+"GetInfoServlet",
+						data : {option : "searchDepartment",hospital:$('#hospital option:selected').val()},
+						dataType : "json",
+							
+						success : function(response) {
+							$("#department").empty();
+							var temp="<option value=''>請選擇</option>";
+							for(var i=0;i<response.length;i++){
+								temp+="<option value='"+response[i]["department"]+"'>"+response[i]["department"]+"</option>";
+							}	
+							$("#department").append(temp);
+							$('#department').attr('disabled', false);		//診別可選
+							
+							$("#doctor").empty();
+							$("#doctor").append("<option value=''>請選擇</option>");
+							$('#doctor').attr('disabled', true);		//醫師不可選
+						},
+						error : function() {
+							console.log("錯誤訊息");
+						}
+					});		
+				}
+				else{	//沒有選擇醫院
+					$("#department").empty();
+					$("#department").append("<option value=''>請選擇</option>");
+					$('#department').attr('disabled', true);		//診別不可選
+
+					$("#doctor").empty();
+					$("#doctor").append("<option value=''>請選擇</option>");
+					$('#doctor').attr('disabled', true);		//醫師不可選
+				}	
+			}
+			
+			//診別選單
+			function changeDepartment(){
+				if($('#department option:selected').val()){
+					$.ajax({
+						url : serverURL+"GetInfoServlet",
+						data : {option : "searchDoctor", hospital : $('#hospital option:selected').val(), department : $('#department option:selected').val()},
+						dataType : "json",
+						
+						success : function(response) {
+							$("#doctor").empty();
+							var temp="<option value=''>請選擇</option>";
+							for(var i=0;i<response.length;i++){
+								temp+="<option value='"+response[i]["doctorID"]+"'>"+response[i]["name"]+"</option>";
+							}	
+							$("#doctor").append(temp);
+							$('#doctor').attr('disabled', false);		//醫師可選
+						},
+						error : function() {
+							console.log("錯誤訊息");
+						}			
+					});		
+				}
+				else{	//沒有選擇診別
+					$("#doctor").empty();
+					$("#doctor").append("<option value=''>請選擇</option>");
+					$('#doctor').attr('disabled', true);		//醫師不可選
+				}	
+			}
+        </script> 
+		<style type="text/css">
+
+	</style>
+	</head>
+	<body>
+		<div class=" text-center title">
+			<a id="backBtn" onclick="window.history.go(-1);"><img src="img/backButton.png"  style="float:left;width:10vw;height:10vw;"></a>
+			<img src="img/folder.png" style="vertical-align:middle;width:10vw;height:10vw;">
+			<h1  style="display:inline;">我的檔案</h1>			
+			<img src="img/background.png" style="float:right;width:10vw;height:10vw;">
+		</div>
+		<div style="height:15vw;"></div>
+		<div class="col-xs-12 col-sm-12">
+			<div style="height:6vw;"></div>
+			<center>
+			<img id="previewImage" src="img/imageUpload.png" style="height:25vw;"/>	<!--影片上傳成功換圖片為 uploadOK.png-->
+			<div style="height:6vw;"></div>
+
+			<p class="basicText" style="display:inline;vertical-align:middle;">醫院：</p>
+			<select class="form-control inputLg" id="hospital" onChange="changeHospital()" disabled="disabled" style="display:inline;vertical-align:middle;width:65vw;">
+				<option value="">請選擇</option>
+				<option value="中國醫藥大學附設醫院">中國醫藥大學附設醫院</option>
+			</select>
+			<div style="height:6vw;"></div>
+			<p class="basicText" style="display:inline;vertical-align:middle;">科別：</p>
+			<select class="form-control inputLg" id="department" onChange="changeDepartment()" disabled="disabled" style="display:inline;vertical-align:middle;width:65vw;">
+				<option value="">請選擇</option>
+			</select>	
+			<div style="height:6vw;"></div>
+			<p class="basicText" style="display:inline;vertical-align:middle;">醫師：</p>
+			<select class="form-control inputLg" id="doctor" disabled="disabled" style="display:inline;vertical-align:middle;width:65vw;">
+				<option value="">請選擇</option>
+			</select>
+
+			<div style="height:6vw;"></div>
+
+			<textarea class="form-control" rows="4" placeholder="檔案內容描述" style="width:80vw" id="description"></textarea>
+			<div style="height:6vw;"></div>
+			<button type="button" class="btn btn-save btn-lg" style="display:inline;outline: none;" onclick="getPhoto(pictureSource.PHOTOLIBRARY);" >選擇相片</button>
+			<button type="button" class="btn btn-save btn-lg" style="display:inline;margin-left:3vw;outline: none;" onclick="getVideo(pictureSource.PHOTOLIBRARY);">選擇影片</button>
+			<div style="height:6vw;"></div>
+			<button id="uploadBtn" type="submit" class="btn btn-pink btn-lg" style="outline: none;">上傳</button>
+			<div style="height:6vw;"></div>
+			</center>
+		</div>
+	</body>
+</html>
+

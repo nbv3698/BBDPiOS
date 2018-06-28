@@ -1,0 +1,73 @@
+<html>
+	<head>
+	<title>BBDP</title>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+	<script type="text/javascript" src="js/FCMPushHandler.js"></script> <!-- 提醒推播 -->
+	<script type="text/javascript" src="cordova.js"></script> <!-- Cordova套件 -->			
+	<link rel="stylesheet" type="text/css" href="css/frame.css">
+	</head>
+	<body>
+		<div class=" text-center title">
+			<a href="Homepage.html"><img src="img/backButton.png"  style="float:left;width:10vw;height:10vw;"></a>
+			<img src="img/questionnaire.png" style="vertical-align:middle;width:10vw;height:10vw;">
+			<h1  style="display:inline;">我的問卷</h1>
+			<a href = "QuestionnaireHistory.html"><img src="img/history.png" style="float:right;width:10vw;height:10vw;"></a>
+		</div>
+		<div style="height:15vw;"></div>
+		<center><button type="button" class="btn btn-save" style="margin:2vw;outline: none;font-size:5vw;width:96vw" onclick="location.href = 'NewQuestionnaire.html'"><img src="img/addButton.png" style="width:8vw;height:8vw;vertical-align:middle;">&nbsp;新增問卷</button></center>
+		<div id = "questionnaireArea">
+		</div>
+		<script>
+			var patientID = window.localStorage.getItem('login');
+			var servletUrl = "http://140.121.197.130:8004/BBDPPatient/";
+			document.addEventListener("backbutton", onBackKeyDown, false); 	//偵測事件  
+			function onBackKeyDown() {  		//返回按鈕    
+				window.location.href = 'Homepage.html';
+			}
+			$(document).ready(function() {
+				$.ajax({
+					url : servletUrl+"QuestionnaireServlet",
+					data : {
+						state : "getQuestionnaireList",
+						patientID : patientID
+					},
+					dataType : "json",
+			
+					success : function(response) {
+						if(response.length){
+							var temp = "";
+							for(var i=0; i<response.length; i+=7){
+								temp += "<div class='col-xs-12 col-sm-12'>";
+								temp += '<div class="row" style="background:#FFFDDB; border:#767676 0.2vw solid;" onclick="clickQuestionnaire(\''+response[i+1]+'\',\''+response[i+3]+'\',\''+response[i+6]+'\')">';
+								temp += "<div class='col-xs-2 col-sm-2' style='padding-top:5vw;padding-bottom:5vw;'>";
+								temp += "<img src='img/pencil.png' width='100%' height='auto'>"; 
+								temp += "</div>";
+								temp += "<div class='col-xs-10 col-sm-10' style='padding-top:2vw;'>"; 
+								temp += '<p class="basicText" style="color:#000000;">'+response[i+4]+'</p>';
+								temp += '<p class="basicText">'+response[i]+response[i+2]+'醫師</p>';
+								temp += '<p class="basicText" style="color:C9C9C9;">'+response[i+5]+'</p>';
+								temp += "</div></div></div>";						
+							}
+							$("#questionnaireArea").empty().append(temp);
+						}else{
+							$("#questionnaireArea").empty().append("<center><p class='basicText' style='font-size:6vw'>目前尚無待填問卷</p></center>");
+						}
+					},
+					error : function() {
+						console.log("錯誤訊息");
+					}
+				});			
+			
+			
+			});
+			function clickQuestionnaire(doctorID, questionnaireID, unfilledID){
+				window.location.href = 'FillInQuestionnaire.html?QID='+questionnaireID+'&DID='+doctorID+'&UNID='+unfilledID;
+			}
+		</script>
+	</body>
+</html>
+

@@ -1,0 +1,490 @@
+<html>
+	<head>
+		<title>BBDP</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<meta http-equiv="Content-Security-Policy" content="media-src *;">
+		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+		<script type="text/javascript" src="js/FCMPushHandler.js"></script> <!-- 提醒推播 -->
+		<script type="text/javascript" src="cordova.js"></script> <!-- Cordova套件 -->	
+		<link rel="stylesheet" type="text/css" href="css/frame.css">
+			
+		<script type="text/JavaScript">
+		$(document).ready(function() {
+			initialPhotoList();	
+		});
+		document.addEventListener("backbutton", onBackKeyDown, false); 	//偵測事件  
+		function onBackKeyDown() {  		//返回按鈕    
+			backPage();
+		}
+		function backPage(){
+			if(backState)
+				window.location.href = 'Folder.html';
+			else
+				window.location.href = 'Homepage.html';
+		}
+
+		var backState = 0;
+		
+		var patientID = window.localStorage.getItem('login');
+		var imgArray = [];
+		var imgSmallArray = [];
+		var videoArray = [];
+		var timeArray = [];
+		var descriptionArray = [];
+		var doctorID = [];
+		var hospital = [];
+		var department = [];
+		var doctorName = [];		
+		var fileAmount;
+
+		//var serverURL = "http://140.121.197.130:8004/BBDPPatient/";
+		//var serverURL = "http://localhost:8080/BBDPPatient/";
+		var fileServerURL = "http://140.121.197.130:8600/BBDPFolderServer/FolderServlet";
+		//var fileServerURL = "http://localhost:8080/BBDPFolderServer/FolderServlet";
+
+		//初始化列表
+		function initialPhotoList(){
+			$.ajax({
+				type: "GET",
+				url: fileServerURL,
+				data: {patientID: patientID, option: "getAllFileInfo"},
+				dataType: "json",
+												
+				success : function(response){
+					fileAmount = response.length;
+					for(var i = 0; i<fileAmount; i++){  	
+						timeArray[i] = response[i]["time"];
+						descriptionArray[i] = response[i]["description"];
+						imgArray[i] = fileServerURL + "?patientID=" + patientID + "&time=" + timeArray[i] + "&option=getPhoto";
+						imgSmallArray[i] = fileServerURL + "?patientID=" + patientID + "&time=" + timeArray[i] + "&option=getSmallPhoto";
+						videoArray[i] = response[i]["video"];
+						doctorID[i] = response[i]["doctorID"];
+						hospital[i] = response[i]["hospital"];
+						department[i] = response[i]["department"];
+						doctorName[i] = response[i]["name"];											
+					}
+					
+					uniqueHospital = GetUnique(hospital);	
+					initialHospital();
+					
+					showPhotoList(response);	
+				},
+		 
+				error : function(){
+					navigator.notification.alert('Server沒有回應',function(){},'提醒','確定');
+				}
+			});
+		}
+
+		//檔案列表
+		function showPhotoList(response){
+			$("#photoList").empty();		
+			var output = "";
+			
+			if(response.length==0) output = "<center><br><p class='basicText' style='font-size:6vw'>目前尚無檔案</p></center>";
+			
+			for(var i = 0; i<response.length; i++){  										
+				if(videoArray[i]=='null'||videoArray[i]==''){		//顯示照片
+					output += photoItem(i);
+				}else{	//顯示影片
+					output += videoItem(i);
+				}		
+			}		
+			$("#photoList").append(output);			
+		}
+
+		//照片項目
+		function photoItem(i){
+			var description = descriptionArray[i];
+						
+			var item = "<div class='col-xs-12 col-sm-12'>" +
+							"<div onclick = 'showPhoto("+i+")' class='row' style='background:#FFFDDB; border:#767676 0.2vw solid;'>" +
+								"<div class='col-xs-3 col-sm-3' style='padding-top:5vw;padding-bottom:5vw;'>" +
+									"<img id='photo' src='" + imgSmallArray[i] + "' width='100%' height='auto'>" +
+								"</div>" +
+								"<div class='col-xs-9 col-sm-9' style='padding-top:4vw;'>" +
+									"<p class='basicText' style='color:#000000;display : inline-block;overflow : hidden;text-overflow : ellipsis;white-space : nowrap;width : 95%;'>" + description + "</p>" +
+									"<p class='basicText' style='color:C9C9C9;'>"+ timeArray[i].substr(0,19) + "</p>" +
+								"</div>" +
+							"</div>" +
+						"</div>";						
+			
+			return item;
+		}
+
+		//影片項目
+		function videoItem(i){
+			var description = descriptionArray[i];
+
+			var item = "<div class='col-xs-12 col-sm-12'>" +
+							"<div onclick = 'showVideo("+i+")' class='row' style='background:#FFFDDB; border:#767676 0.2vw solid;'>" +
+								"<div class='col-xs-3 col-sm-3' style='padding-top:5vw;padding-bottom:5vw;'>" +
+									"<img id='photo' src='" + imgSmallArray[i] + "' width='100%' height='auto'>" +
+								"</div>" +
+								"<div class='col-xs-9 col-sm-9' style='padding-top:4vw;'>" +
+									"<p class='basicText' style='color:#000000;display : inline-block;overflow : hidden;text-overflow : ellipsis;white-space : nowrap;width : 95%;'>" + description + "</p>" +
+									"<p class='basicText' style='color:C9C9C9;'>" + timeArray[i].substr(0,19) +"</p>" +			
+								"</div>" +
+							"</div>" +
+						"</div>";
+									
+			return item;
+		}
+
+        //顯示照片
+		function showPhoto(i) {
+			backState = 1;
+			$("#selectDiv").empty();
+			$("#photoList").remove();
+			var output = "<div class='col-xs-12 col-sm-12'>" +
+							"<div style='height:6vw;'></div>" +
+							"<center>" +
+								"<img src='" + imgArray[i] + "' style='max-width:80vw;max-height:80vw;'/>" +
+								"<div style='height:6vw;''></div>" +
+								"<textarea id='editDescription' class='form-control' rows='4' placeholder='檔案內容描述' style='width:80vw'>"+descriptionArray[i]+"</textarea>" +
+								"<div style='height:6vw;'></div>" +
+								"<button onclick = 'deletePhoto("+i+")' type='button' class='btn btn-save btn-lg' style='outline: none;' >刪除</button>" +
+								"<button onclick = 'editPhoto("+i+")' type='button' class='btn btn-pink btn-lg'  style='margin-left:15vw;outline: none;'>儲存</button>" +
+								"<div style='height:6vw;'></div>" +
+							"</center>" +
+						"</div>";
+			$("#bigPhoto").append(output);		
+		}
+
+		//顯示影片
+		function showVideo(i) {
+			backState = 1;
+			$("#selectDiv").empty();
+			$("#photoList").remove();
+
+			var output = "<div class='col-xs-12 col-sm-12'>" +
+							"<div style='height:6vw;'></div>" +
+							"<center>" +
+								"<video id='videoPlayer' style='max-width:80vw;max-height:80vw;' controls>" + 
+									"<source id='videoSource' src='" + fileServerURL + "?option=getVideo&videoPath=" + videoArray[i] + "' preload='metadata' webkit-playsinline>"+
+									"Your browser does not support the video tag."+					
+								"</video>"+
+								"<div style='height:6vw;''></div>" +
+								"<textarea id='editDescription' class='form-control' rows='4' placeholder='檔案內容描述' style='width:80vw'>"+descriptionArray[i]+"</textarea>" +
+								"<div style='height:6vw;'></div>" +
+								"<button onclick = 'deleteVideo("+i+")' type='button' class='btn btn-save btn-lg' style='outline: none;' >刪除</button>" +
+								"<button onclick = 'editPhoto("+i+")' type='button' class='btn btn-pink btn-lg'  style='margin-left:15vw;outline: none;'>儲存</button>" +
+								"<div style='height:6vw;'></div>" +
+							"</center>" +
+						"</div>";
+			
+			$("#bigPhoto").append(output);
+        }
+		
+		var deleteIndex;
+		
+		//刪除影片
+		function deleteVideo(i) {
+			var videoElement = document.getElementById('videoPlayer');
+			videoElement.pause();
+			deleteIndex = i;
+			
+			navigator.notification.confirm('確定刪除?', confirmDeleteVideo, '', '確定,取消');			
+        }
+		
+		function confirmDeleteVideo(button){
+			if(button==1){
+				var videoElement = document.getElementById('videoPlayer');
+				videoElement.src = "";
+				videoElement.load();
+
+				$.ajax({
+					type: "GET",
+					url: fileServerURL,
+					data: {patientID : patientID, videoPath : videoArray[deleteIndex], time : timeArray[deleteIndex], option : "deleteVideo"},
+					dataType: "text",
+													
+	 				success : function(response){
+						navigator.notification.alert(response,null,'提醒','確定');
+						deleteIndex = -1;
+						location.reload();//重新整理				
+					},
+					error : function(xhr, ajaxOptions, thrownError){
+						navigator.notification.alert('刪除失敗',null,'提醒','確定');
+						deleteIndex = -1;
+					}
+				});
+			}
+		}
+	
+		//刪除照片
+		function deletePhoto(i) {
+			deleteIndex = i;
+			navigator.notification.confirm('確定刪除?', confirmDeletePhoto, '', '確定,取消');			
+        }
+		
+		function confirmDeletePhoto(button){
+			if( button==1 ){
+				$.ajax({
+					type: "GET",
+					url: fileServerURL,
+					data: {patientID: patientID, time:timeArray[deleteIndex], option:"deletePhoto"},
+					dataType: "text",
+														
+					success : function(response){
+						navigator.notification.alert(response,null,'提醒','確定');
+						deleteIndex = -1;
+						location.reload();	//重新整理							
+					},
+					error : function(xhr, ajaxOptions, thrownError){
+						navigator.notification.alert('刪除失敗',null,'提醒','確定');
+						deleteIndex = -1;
+					}
+				});
+			}
+		}
+		
+		//修改
+		function editPhoto(i) {
+			if($('#editDescription').val().trim() == ""){
+				navigator.notification.alert('請輸入檔案內容描述',function(){},'提醒','確定');
+			}
+			else if($('#editDescription').val().length > 200){
+				navigator.notification.alert('檔案內容描述請勿超過200個字',function(){},'提醒','確定');
+			}
+			else{
+				$.ajax({
+					type: "GET",
+					url: fileServerURL,
+					data: {patientID: patientID, time:timeArray[i], description:$('#editDescription').val(), option:"editPhoto"},
+					dataType: "text",
+													
+	 				success : function(response){
+						navigator.notification.alert(response,function(){},'提醒','確定');
+						location.reload();	//重新整理
+					},
+	 
+					error : function(xhr, ajaxOptions, thrownError){
+						navigator.notification.alert('Server沒有回應',function(){},'提醒','確定');
+					}
+				});
+			}					
+        }
+		
+		//找不同
+		function GetUnique(inputArray) {
+			var outputArray = [];
+			for (var i = 0; i < inputArray.length; i++) {
+				if ((jQuery.inArray(inputArray[i], outputArray)) == -1) {
+					outputArray.push(inputArray[i]);
+				}
+			}
+			return outputArray;
+		}
+
+		//初始化醫院選單
+		function initialHospital(){
+			$("#hospital").empty();
+			$("#department").empty();
+			$("#doctor").empty();
+			var option = "<option value=''>所有醫院</option>";			
+			for(var i = 0; i < uniqueHospital.length ; i++){
+				option += "<option value='"+ uniqueHospital[i] +"'>"+uniqueHospital[i]+"</option>";	
+			}						
+			$("#hospital").append(option);
+			
+			$("#department").append("<option value=''>所有科別</option>");
+			
+			$("#doctor").append("<option value=''>所有醫師</option>");
+			
+			$('#hospital').attr('disabled', false);		//醫院可選
+		}
+		
+		//選擇醫院		
+		function changeHospital(){
+			$("#photoList").empty();
+			$("#department").empty();
+			$("#doctor").empty();
+			
+			var uniqueDepartment = [];
+			var option = "<option value=''>所有醫師</option>";
+			var output = "";
+			
+			$("#doctor").append(option);
+			
+			option = "<option value=''>所有科別</option>";
+			if($('#hospital option:selected').val().length == 0){	//所有醫院
+				for(var i = 0 ; i < fileAmount; i ++){
+					if(videoArray[i]=='null'||videoArray[i]==''){		
+						output += photoItem(i);
+					}else{	//顯示影片
+						output += videoItem(i);
+					}
+				}
+				$("#photoList").append(output);
+				$('#department').attr('disabled', true);		//診別不可選
+				$('#doctor').attr('disabled', true);		//醫師不可選
+			}
+			else if($('#hospital option:selected').val().length > 0){	//選擇醫院
+				for(var i = 0 ; i < fileAmount; i ++){
+					if(hospital[i] == $('#hospital option:selected').val()){
+						if(videoArray[i]=='null'||videoArray[i]==''){		
+							output += photoItem(i);
+						}else{
+							output += videoItem(i);
+						}
+						uniqueDepartment.push(department[i]);	//同家醫院的診別
+					}
+				}
+				$("#photoList").append(output);
+
+				uniqueDepartment = GetUnique(uniqueDepartment);
+			
+				for(var i = 0; i < uniqueDepartment.length ; i++){
+					option += "<option value='"+ uniqueDepartment[i] +"'>"+uniqueDepartment[i]+"</option>";				
+				}						
+				$('#department').attr('disabled', false);		//診別可選
+				$('#doctor').attr('disabled', true);		//醫師不可選
+			}
+			$("#department").append(option);			
+		}
+		
+		//選擇診別
+		function changeDepartment(){
+			$("#doctor").empty();
+			$("#photoList").empty();
+			var uniqueDoctorID = [];
+			var uniqueDoctorName= [];
+			var option = "<option value=''>所有醫師</option>";
+			var output = "";
+			
+			if($('#department option:selected').val().length==0){	//同家醫院 所有診別
+				for(var i = 0 ; i < fileAmount; i ++){
+					if(hospital[i] == $('#hospital option:selected').val()){
+						if(videoArray[i]=='null'||videoArray[i]==''){		
+							output += photoItem(i);
+						}else{
+							output += videoItem(i);
+						}
+					}
+				}
+				$("#photoList").append(output);	
+									$('#doctor').attr('disabled', true);		//醫師不可選
+			}
+			
+			if($('#department option:selected').val().length>0){	//選擇醫院跟診別
+				for(var i = 0 ; i < fileAmount; i ++){
+					if(hospital[i] == $('#hospital option:selected').val() && department[i] == $('#department option:selected').val()){
+						if(videoArray[i]=='null'||videoArray[i]==''){		
+							output += photoItem(i);
+						}else{
+							output += videoItem(i);
+						}
+						uniqueDoctorID.push(doctorID[i]);
+						uniqueDoctorName.push(doctorName[i]);
+					}
+				}			
+				$("#photoList").append(output);
+				
+				uniqueDoctorID = GetUnique(uniqueDoctorID);
+				uniqueDoctorName = GetUnique(uniqueDoctorName);
+					
+				for(var i = 0; i < uniqueDoctorID.length ; i++){
+					option += "<option value='"+ uniqueDoctorID[i] +"'>"+uniqueDoctorName[i]+"</option>";				
+				}						
+				$('#doctor').attr('disabled', false);		//醫師可選
+			
+			}
+			$("#doctor").append(option);			
+		}
+
+		//選擇醫生
+		function changeDoctor(){
+			$("#photoList").empty();
+			var output = "";			
+			if($('#doctor option:selected').val().length == 0){ //選擇醫院跟診別 沒有選醫生
+				for(var i = 0 ; i < fileAmount; i ++){
+					if(hospital[i] == $('#hospital option:selected').val() && department[i] == $('#department option:selected').val()){
+						if(videoArray[i]=='null'||videoArray[i]==''){		
+							output += photoItem(i);
+						}else{
+							output += videoItem(i);
+						}
+					}
+				}				
+				$("#photoList").append(output);			
+			}
+			
+			if($('#doctor option:selected').val().length > 0){ 	//選擇醫生
+				for(var i = 0 ; i < fileAmount; i ++){
+					if(doctorID[i] == $('#doctor option:selected').val()){
+						if(videoArray[i]=='null'||videoArray[i]==''){		
+							output += photoItem(i);
+						}else{
+							output += videoItem(i);
+						}
+					}
+				}				
+				$("#photoList").append(output);	
+			}			
+		}
+        </script>
+		<style type="text/css">
+			#photo{
+				height:18vw;
+				width:18vw;
+				object-fit: cover;
+			}
+		</style>
+	</head>
+	<body>
+		<div class=" text-center title">
+			<a onclick="backPage()"><img src="img/backButton.png"  style="float:left;width:10vw;height:10vw;"></a>	
+			<img src="img/folder.png" style="vertical-align:middle;width:10vw;height:10vw;">
+			<h1  style="display:inline;">我的檔案</h1>
+			<a href = "UploadFile.html"><img src="img/addButton.png" style="float:right;width:10vw;height:10vw;"></a>
+		</div>
+
+		<div style="height:15vw;"></div>
+
+		<!--------------------------------------------------------------------選單---------------------------------------------------------->
+		<div id="selectDiv">		
+			<div style="height:6vw;"></div>
+			<select class="form-control inputLg" id="hospital"  onChange="changeHospital()" disabled="disabled" style="display:inline;margin-left:4vw;width:80vw;">
+				<option value="">所有醫院</option>
+			</select>
+			<div style="height:3vw;"></div>
+			<select class="form-control inputLg" id="department"  onChange="changeDepartment()" disabled="disabled" style="display:inline;margin-left:4vw;width:80vw;">
+				<option value="">所有科別</option>
+			</select>
+			<div style="height:3vw;"></div>
+			<select class="form-control inputLg" id="doctor"  onChange="changeDoctor()" disabled="disabled" style="display:inline;margin-left:4vw;width:80vw;">
+				<option value="">所有醫師</option>
+			</select>			
+			<div style="height:6vw;"></div>
+		</div>
+		<!--------------------------------------------------------------------檔案列表---------------------------------------------------------->
+		<div id = "photoList">
+			<!--------------------------------------------------------------------檔案項目
+			<div style="background:#FFFDDB; border:#767676 0.2vw solid;padding:1vw">
+				<div class="media-left media-middle" >
+					<img src="img/imageView.png" class="media-object" style="height:15vw;margin-left:2.5vw">
+				</div>
+				<div class="media-body" style="padding:1vw">
+					<p class="basicText" style="color:#000000;">圖片描述</p>
+					<p style="font-size:4.5vw;color:#666666;">時間</p>
+				</div>
+			</div>
+			<div style="background:#FFFDDB; border:#767676 0.2vw solid;padding:1vw">
+				<div class="media-left media-middle" >
+					<img src="img/videoIcon.png" class="media-object" style="height:15vw;margin-left:2.5vw">
+				</div>
+				<div class="media-body" style="padding:1vw">
+					<p class="basicText" style="color:#000000;">影片描述</p>
+					<p style="font-size:4.5vw;color:#666666;">時間</p>			
+				</div>
+			</div>
+			---------------------------------------------------------->
+		</div>
+		<!-----------------檢視檔案---------------------------------------------------------->
+		<div id = "bigPhoto"></div>
+	</body>
+</html>

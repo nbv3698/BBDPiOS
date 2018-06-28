@@ -1,0 +1,211 @@
+<html>
+	<head>
+		<title>BBDP</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+		<script type="text/javascript" src="js/FCMPushHandler.js"></script> <!-- 提醒推播 -->
+		<script type="text/javascript" src="cordova.js"></script> <!-- Cordova套件 -->		
+		<link rel="stylesheet" type="text/css" href="css/frame.css">
+		<script>
+			document.addEventListener("backbutton", onBackKeyDown, false); 	//偵測事件  
+			function onBackKeyDown() {  		//返回按鈕    
+				window.location.href = 'FamilyList.html';
+			}	
+		</script>
+		<script>
+			//var serverURL = "http://localhost:8080/BBDPPatient/";
+			var serverURL = "http://140.121.197.130:8004/BBDPPatient/";
+
+			var url;	//目前網址
+			var userID = window.localStorage.getItem('login');
+			var displayName;	//稱謂
+			var familyName;		//家屬姓名
+			var familyID;
+			var healthtrackingLimit;
+			var fileLimit;
+			var medicalrecordLimlt;
+
+			$(document).ready(function() {
+				url = decodeURI(window.location.href);
+				familyID = url.split("?")[1].split("=")[1];
+
+				//顯示稱謂
+				setKinship();
+				//placeholder放本名
+				setFamilyName();
+
+				//顯示大頭照
+				$("#familyPicture").empty();
+				$("#familyPicture").append("<img src='"+serverURL +"ProfilePictureServlet?option=getProfilePicture&patientID="+familyID+"' width='100%' height='auto' onerror='failToLoadFamilyPicture();'>");
+
+				//取得權限
+				getLimit();
+			});
+
+			//取得稱謂
+			function setKinship(){
+				$.ajax({
+					type: "GET",
+					url: serverURL+"FamilyServlet",
+					data: {option : "getKinship", userID : window.localStorage.getItem('login'), familyID : familyID},
+					dataType: "text",
+																	
+					success : function(response){
+						displayName=response;
+						$("#displayName").val(displayName);		
+					},
+					error : function(){
+						console.log("server沒有回應");
+					}
+				});
+			}
+
+			//取得家屬姓名
+			function setFamilyName(){
+				$.ajax({
+					type: "GET",
+					url: serverURL+"FamilyServlet",
+					data: {option : "getPatientNameByID", familyID : familyID},
+					dataType: "text",
+																	
+					success : function(response){
+						familyName=response;
+						$("#displayName").attr("placeholder", familyName);	
+					},
+					error : function(){
+						console.log("server沒有回應");
+					}
+				});
+			}
+
+			//取得權限
+			function getLimit(){
+				$.ajax({
+					type: "GET",
+					url: serverURL+"FamilyServlet",
+					data: {option : "getLimit", userID : familyID, familyID : userID},
+					dataType: "json",
+														
+		 				success : function(response){
+							healthtrackingLimit = response[0]["healthtrackingLimit"];
+							fileLimit = response[0]["fileLimit"];
+							medicalrecordLimlt = response[0]["medicalrecordLimlt"];
+						},
+						error : function(){
+							navigator.notification.alert('Server沒有回應',null,'提醒','確定');
+						}
+				});
+			}
+
+			//修改稱謂
+			function setDisplayName(inputName){
+				//alert(inputName);
+				
+				if(inputName.length>15){
+					navigator.notification.alert('請勿輸入超過15個字元',null,'提醒','確定');
+					$("#displayName").val(displayName);
+				}
+				else{
+					if(inputName.trim() == ""){		//判斷空格
+						inputName == "";
+						$("#displayName").val("");
+					}
+
+					displayName = inputName;
+					
+					$.ajax({
+						type: "GET",
+						url: serverURL+"FamilyServlet",
+						data: {option : "editKinship", userID : userID, familyID : familyID, kinship : $("#displayName").val()},
+						dataType: "text",
+														
+		 				success : function(){},
+						error : function(){
+							console.log("修改稱謂錯誤");
+						}
+					});
+				}				
+			}
+
+			function failToLoadFamilyPicture(i){
+				$("#familyPicture").empty();
+				$("#familyPicture").append("<img src='img/user.png' width='100%' height='auto'>");
+			}
+
+			//連結
+			function linkFolder(){
+				window.location.href = "FamilyFolder.html?familyID="+familyID+"&fileLimit="+fileLimit;
+			}
+
+			function linkHealthTrackingList(){
+				window.location.href = "FamilyHealthTrackingList.html?familyID="+familyID+"&healthtrackingLimit="+healthtrackingLimit;
+			}
+
+			function linkMedicalRecordSearch(){
+				window.location.href = "FamilyMedicalRecordSearch.html?familyID="+familyID+"&medicalrecordLimlt="+medicalrecordLimlt;
+			}
+
+			function linkNotice(){
+				window.location.href = "FamilyNotice.html?familyID="+familyID;
+			}
+
+		</script>
+		<style type="text/css">
+			.checkImg:hover{ position:relative; top:1px; left:1px;}
+		</style>
+	</head>
+	<body>
+		<div class=" text-center title">
+			<a href="FamilyList.html"><img src="img/backButton.png"  style="float:left;width:10vw;height:10vw;"></a>
+			<img  src="img/family.png" style="vertical-align:middle;width:10vw;height:10vw;">
+			<h1  style="display:inline;">我的家屬</h1>
+			<img src="img/background.png" style="float:right;width:10vw;height:10vw;">		
+		</div>
+		<div style="height:15vw;"></div>	
+		
+		<div class='col-xs-12 col-sm-12'>
+			<div class='row' style='background:#FFCBCB;'>
+				<!----------------------------------------大頭照-------------------------------------->
+				<div id="familyPicture" class="col-xs-3 col-sm-3" style="padding-top:5vw;padding-bottom:5vw;">
+					<img src="img/familyBackground.png" width="100%" height="auto">
+				</div>			
+				<div class='col-xs-9 col-sm-9' style='padding-top:7.5vw;'>
+					<input id="displayName" type="text" class="form-control inputLg" placeholder="" onchange="setDisplayName($(this).val());">
+				</div>
+			</div>
+		</div>
+		
+		<div class="col-xs-12 col-sm-12" style="height:15vw;"></div>
+		<center>
+		<div class="col-xs-12 col-sm-12">
+			<center>
+				<div class="row" style="margin-bottom:3vw;">
+					<div class="col-xs-2 col-sm-2"></div>
+					<div class="col-xs-4 col-sm-4 checkImg">
+						<a onclick="linkFolder()" style="text-decoration:none;"><div class="img"><img src="img/folder.png" width="70%" height="auto"></div><p class="basicText">檔案瀏覽</p></a>
+					</div>
+					<div class="col-xs-4 col-sm-4 checkImg">	
+						<a onclick="linkHealthTrackingList()" style="text-decoration:none;"><div class="img"><img src="img/healthTracking.png" width="70%" height="auto"></div><p class="basicText">健康追蹤</p></a>
+					</div>
+					<div class="col-xs-2 col-sm-2"></div>
+				</div>
+				<div class="row" style="margin-bottom:3vw;">
+					<div class="col-xs-2 col-sm-2"></div>
+					<div class="col-xs-4 col-sm-4 checkImg">
+						<a onclick="linkMedicalRecordSearch()" style="text-decoration:none;"><div class="img"><img src="img/medicalRecord.png" width="70%" height="auto"></div><p class="basicText">病歷瀏覽</p></a>
+					</div>
+					<div class="col-xs-4 col-sm-4 checkImg">	
+						<a onclick="linkNotice()" style="text-decoration:none;"><div class="img"><img src="img/notice.png" width="70%" height="auto"></div><p class="basicText">注意事項</p></a>
+					</div>
+					<div class="col-xs-2 col-sm-2"></div>
+				</div>
+			</div>		
+		</center>
+		
+		
+	</body>
+</html>
+

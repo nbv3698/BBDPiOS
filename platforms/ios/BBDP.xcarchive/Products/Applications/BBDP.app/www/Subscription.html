@@ -1,0 +1,112 @@
+<html>
+	<head>
+		<title>BBDP</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+		<script type="text/javascript" src="js/FCMPushHandler.js"></script> <!-- 提醒推播 -->
+		<script type="text/javascript" src="cordova.js"></script> <!-- Cordova套件 -->		
+		<link rel="stylesheet" type="text/css" href="css/frame.css">
+		<script>
+			//var thisBtn=0;  //此症狀是否訂閱
+			document.addEventListener("backbutton", onBackKeyDown, false); 	//偵測事件  
+			function onBackKeyDown() {  		//返回按鈕    
+				window.location.href = 'PatientInstructionList.html';
+			}
+			function accordingToSymptom(){
+				$("#symptomBar").fadeIn(500);
+				$("#doctorBar").fadeOut(500);
+				accordingToSymptomPage();	//顯示頁面
+			}
+			function accordingToDoctor(){
+				$("#symptomBar").fadeOut(500);
+				$("#doctorBar").fadeIn(500);
+				accordingToDoctorPage();	//顯示頁面
+			}
+		</script>
+	</head>
+	<body>
+		<div class=" text-center title">
+			<a href="PatientInstructionList.html"><img src="img/backButton.png"  style="float:left;width:10vw;height:10vw;"></a>		
+			<img src="img/information.png" style="vertical-align:middle;width:10vw;height:10vw;">
+			<h1  style="display:inline;">資訊平台</h1>
+			<a href="NewSubscription.html"><img src="img/addButton.png" style="float:right;width:10vw;height:10vw;"></a>
+		</div>
+		<div style="height:15vw;"></div>
+		<div class="col-xs-12 col-sm-12">
+			<div class="row" style="text-align:center">	
+			<!--------------------------------------內容----------------------------------------------->
+				<div class="col-xs-6 col-sm-6" style="padding:4vw" onclick="accordingToSymptom()">
+					<p class="basicText">依症狀</p>
+					<div id="symptomBar" style="background-color:#767676;height:2vw;"></div>
+				</div>
+				<div class="col-xs-6 col-sm-6" style="padding:4vw" onclick="accordingToDoctor()">
+					<p class="basicText">依醫師</p>
+					<div id="doctorBar" style="background-color:#767676;height:2vw;display:none;"></div>
+				</div>				
+			</div>
+		</div>
+		
+		
+		<!--!!!!!!!!!!!!!!!!!!!!!若依症狀未訂閱就顯示
+		<center><br><p class='basicText' style='font-size:6vw'>目前尚未依症狀訂閱文章</p></center>
+		然後下面的區塊都不要
+		-->		
+		<!--!!!!!!!!!!!!!!!!!!!!!若依醫師未訂閱就顯示		
+		<center><br><p class='basicText' style='font-size:6vw'>目前尚未依醫師訂閱文章</p></center>
+		然後下面的區塊都不要
+		-->	
+		
+		
+		<div class="col-xs-12 col-sm-12">
+		<div id="changeSearch">
+			<select class="form-control inputLg" id="department" style="width:50vw" onChange="changeDepartment(this)">
+				<option value="all">請選擇科別</option>
+			</select>
+			<!--如果有選擇科別，下面就要跟著篩選了，不管有沒有選症狀或醫師-->		
+			<div style="height:2vw;"></div>
+			<select class="form-control inputLg" id="symptom" disabled="disabled" style="display:inline;vertical-align:middle;width:50vw" onChange="changeSymptom(this)">
+				<option value="all">請選擇症狀</option>
+				<!--選 依醫師 的話<option value="all">請選擇醫師</option>-->
+			</select>
+			<div id="deleteSubscriptionButton" style="display:inline;">
+				<!--<input type="button" class="btn btn-save btn-lg" onclick="" style="display:inline;vertical-align:middle;margin-left:2vw;outline: none;" value="取消訂閱">
+				有選症狀或醫師才出現按鈕-->
+			</div>
+		</div>
+			<div style="height:4vw;"></div>			
+			<div class="row" id="subscriptionList">
+				<!-- 
+				<a href='PatientInstruction.html?patientInstructionID="+response.patientInstructionIDList[number]+"' style='text-decoration:none'>
+					<div style='border:#767676 0.2vw solid;font-size:4.5vw'>
+						<div class='panel-heading' style='background-color: #FFCBCB;'>
+							<p class='label' style='float:right;font-size:4.5vw;background-color:#AFAFAF'>症狀</p>
+							<p style='color:000000;display:inline;'>文章名稱</p>
+						</div>
+						<div class='panel-body'>
+							<p style='color:767676;font-size:4vw;margin-bottom:-1vw'>醫院<br>科別醫生</p>
+						</div>
+					</div>
+				</a>
+				<a href='PatientInstruction.html?patientInstructionID="+response.patientInstructionIDList[number]+"' style='text-decoration:none'>
+					<div style='border:#767676 0.2vw solid;font-size:4.5vw'>
+						<div class='panel-heading' style='background-color: #FFCBCB;'>
+							<p class='label' style='float:right;font-size:4.5vw;background-color:#AFAFAF'>症狀</p>
+							<p style='color:000000;display:inline;'>文章名稱</p>
+						</div>
+						<div class='panel-body'>
+							<p style='color:767676;font-size:4vw;margin-bottom:-1vw'>醫院<br>科別醫生</p>
+						</div>
+					</div>
+				</a>
+				 -->					
+			</div>
+		</div>
+		
+		<script type="text/javascript" src="js/subscription.js"></script>	<!-- subscription.js -->
+		
+	</body>
+</html>
+

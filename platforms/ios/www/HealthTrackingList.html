@@ -1,0 +1,74 @@
+<html>
+	<head>
+		<title>BBDP</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+		<link rel="stylesheet" type="text/css" href="css/frame.css">
+		<script type="text/javascript" src="js/FCMPushHandler.js"></script> <!-- 提醒推播 -->
+		<script type="text/javascript" src="cordova.js"></script> <!-- Cordova套件 -->		
+		
+		<!-- C3.js相關 -->
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/c3/0.4.10/c3.min.js"></script>
+		<link href="https://cdnjs.cloudflare.com/ajax/libs/c3/0.4.10/c3.min.css" rel="stylesheet" />
+		
+		<script>
+			document.addEventListener("backbutton", onBackKeyDown, false); 	//偵測事件  
+			function onBackKeyDown() {  		//返回按鈕    
+				window.location.href = 'Homepage.html';
+			}			
+		</script>
+		
+	</head>
+	<body>
+		<div class=" text-center title">
+			<a href="Homepage.html"><img src="img/backButton.png"  style="float:left;width:10vw;height:10vw;"></a>	
+			<img src="img/healthTracking.png" style="vertical-align:middle;width:10vw;height:10vw;">
+			<h1  style="display:inline;">健康狀況追蹤</h1>
+			<a href = "SelectItemHealthTracking.html"><img src="img/addButton.png" style="float:right;width:10vw;height:10vw;"></a>
+		</div>
+		<div style="height:15vw;"></div>
+		<!--------------------------------------內容----------------------------------------------->
+		<div style="height:6vw;"></div>
+		<select class="form-control inputLg" id="healthType" style="display:inline;vertical-align:middle;margin-left:4vw;width:65vw;" onchange="changeList()">
+			<option value="all">所有項目</option>
+		</select>	
+		<button type="button" class="btn btn-save btn-lg" style="outline: none;margin-left:4vw;" data-toggle="modal" data-target="#dateModal">日期</button>
+		
+		<div style="height:6vw;"></div>
+		<div id="display"></div>
+
+		
+		<!-- Modal -->
+		<div id="dateModal" class="modal fade" role="dialog">
+		  <div class="modal-dialog">
+
+			<!-- Modal content-->
+			<div class="modal-content" style="padding:4vw">
+			  <div class="modal-header">
+				<button type="button" class="close" data-dismiss="modal" style="outline: none;" >&times;</button>
+				<p class="basicText" class="modal-title" id="myModalLabel">日期區間</p>
+			  </div>
+			  <div class="modal-body">
+			  	<p class="basicText" style="display:inline;">開始：</p>
+				<input type="date" class="form-control inputLg" id="dateStart" onchange="selectDate()" style="display:inline;"/>
+				<div style="height:3vw;"></div>
+				<p class="basicText" style="display:inline;">結束：</p>
+				<input type="date" class="form-control inputLg" id="dateEnd" onchange="selectDate()" style="display:inline;" />
+			  </div>
+			  <div class="modal-footer">
+				<button type="button" class="btn btn-default" style="font-size:5vw" data-dismiss="modal">關閉</button>
+			  </div>
+			</div>
+
+		  </div>
+		</div>
+		
+		<script type="text/javascript" src="js/healthTrackingList.js"></script>	<!-- healthTrackingList.js -->
+		
+	</body>
+</html>
+

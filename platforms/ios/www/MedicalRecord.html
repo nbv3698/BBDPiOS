@@ -1,0 +1,71 @@
+<html>
+	<head>
+		<title>BBDP</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+		<script type="text/javascript" src="js/FCMPushHandler.js"></script> <!-- 提醒推播 -->
+		<script type="text/javascript" src="cordova.js"></script> <!-- Cordova套件 -->		
+		<link rel="stylesheet" type="text/css" href="css/frame.css">
+	</head>
+	<body>
+
+		<div class=" text-center title">
+			<a href="MedicalRecordSearch.html"><img src="img/backButton.png"  style="float:left;width:10vw;height:10vw;"></a>
+			<img src="img/medicalRecord.png" style="vertical-align:middle;width:10vw;height:10vw;">			
+			<h1  style="display:inline;">我的病歷</h1>
+			<img src="img/background.png" style="float:right;width:10vw;height:10vw;">	
+		</div>
+		<div style="height:15vw;"></div>
+		<div class="col-xs-12 col-sm-12">
+		<!--------------------------------------內容----------------------------------------------->
+			<div class="row" style="background: #FFFDDB; padding-top: 3vw; padding-bottom: 1vw;">
+				<div class="col-xs-12 col-sm-12" id = "medicalRecordTitle">
+
+				</div>
+			</div>
+			<div class="row" style="padding-top: 3vw; padding-bottom: 2vw;">
+				<div class="col-xs-12 col-sm-12 " id = "medicalRecordContent">
+				</div>
+			</div>
+		</div>
+		<script>
+			var servletUrl = "http://140.121.197.130:8004/BBDPPatient/";
+			var patientID = window.localStorage.getItem('login');
+			var url = window.location.href;
+			var medicalRecordID = url.split("?")[1].split("=")[1];	//取得病歷ID
+			document.addEventListener("backbutton", onBackKeyDown, false); 	//偵測事件  
+			function onBackKeyDown() {  		//返回按鈕    
+				window.location.href = 'MedicalRecordSearch.html';
+			}
+			$(document).ready(function() {
+				$.ajax({
+					url : servletUrl+"QuestionnaireServlet",
+					data : {
+						state : "getMedicalRecord",
+						patientID : patientID,
+						medicalRecordID : medicalRecordID
+					},
+					dataType : "json",						
+					success : function(response) {
+						var titleTemp = '<p class="basicText" style="color:#000000">'+response[0]+'</p>';
+						titleTemp += '<p class="basicText" style="color:#000000">看診：'+response[1]+response[2]+'醫師</p>';
+						titleTemp += '<p style="font-size:4vw;color:#C9C9C9;">'+response[3].substr(0,16)+'</p>';
+						var contentTemp = '<p class="basicText" style="color:#888888;">'+response[5]+'</p>';
+						contentTemp += '<p style="font-size:3.5vw;color:#C9C9C9;float:right;">最後修改時間：'+response[4].substr(0,16)+'</p>';
+						$("#medicalRecordTitle").empty().append(titleTemp);
+						$("#medicalRecordContent").empty().append(contentTemp);
+					},
+					error : function() {
+						console.log("錯誤訊息");
+					}		
+				});	
+			});	
+
+		</script>
+	</body>
+</html>
+
+

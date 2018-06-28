@@ -1,0 +1,179 @@
+<html>
+	<head>
+		<title>BBDP</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+		<script type="text/javascript" charset="utf-8" src="js/FCMPushHandler.js"></script> <!-- 提醒推播 -->
+		<script type="text/javascript" charset="utf-8" src="js/revisitTime.js"></script> <!-- 回診時間 -->
+		<link rel="stylesheet" type="text/css" href="css/frame.css">
+		<script type="text/javascript" src="cordova.js"></script> <!-- Cordova套件 -->	
+		<script type="text/javascript" src="js/logout.js"></script> <!-- 登出 -->	
+
+		<script>
+			//一進來就先判斷是否已經登入，沒有的話自動跳轉至登入頁面
+			document.addEventListener("backbutton", onBackKeyDown, false); 	//偵測事件  
+			function onBackKeyDown() {  		//返回按鈕    
+				navigator.notification.confirm('確定關閉BBDP', showConfirm, '離開', '確定,取消');
+			}
+			function showConfirm(button){
+				if( button == 1 ){
+					navigator.app.exitApp();//退出app程序
+				}
+			}
+			// Wait for device API libraries to load
+		    document.addEventListener("deviceready", onDeviceReady, false);
+		    // device APIs are available
+		    var uuid;
+		    function onDeviceReady() {
+		    	uuid = device.uuid;
+		    	console.log("uuid : " + uuid);
+		        judgeLogin();
+		    }
+
+		    function judgeLogin(){
+		    	$.ajax({
+					type: "POST",
+					url : "http://140.121.197.130:8004/BBDPPatient/LoginVerificationServlet",
+					data : {
+						state : "judgeLogin",
+						uuid : uuid,
+						patientID : window.localStorage.getItem('login')
+					},
+					dataType : "json",
+	
+					success : function(response) {
+						if (!response.result) {
+							ClearLocalStorage("此用戶已在其他裝置登入，當前裝置將被登出");
+							//navigator.notification.alert("此用戶已在其他裝置登入，當前裝置將被登出", function(){window.location.href = 'Login.html';}, "提醒", "確定");
+						}
+						else{
+							isInPatients();	// 判斷該病患ID是否在patients裡面
+						}
+					},
+					error : function() {
+						console.log("錯誤訊息");
+					}
+				});
+		    }
+		    
+			// 判斷該病患ID是否在patients裡面
+		    function isInPatients(){
+		    	$.ajax({
+					type: "POST",
+					url : "http://140.121.197.130:8004/BBDPPatient/SystemServlet",
+					data : {
+						state : "isInPatients",
+						patientID : window.localStorage.getItem('login')
+					},
+					dataType : "json",
+	
+					success : function(response) {
+						if (!response) {
+							navigator.notification.alert("登入人數已達上限，當前裝置將被登出", function(){window.location.href = 'Login.html';}, "提醒", "確定");
+						}
+						else{
+							updatePatientsToFirst();
+						}
+					},
+					error : function() {
+						console.log("錯誤訊息");
+					}
+				});
+		    }
+			
+		 // 更新優先順序至最新	// 先刪掉在新增，就會變成最新的了
+		 function updatePatientsToFirst(){
+	    	$.ajax({
+				type: "POST",
+				url : "http://140.121.197.130:8004/BBDPPatient/SystemServlet",
+				data : {
+					state : "updatePatientsToFirst",
+					patientID : window.localStorage.getItem('login')
+				},
+				dataType : "json",
+
+				success : function(response) {
+					if (!response) {
+						navigator.notification.alert("更新patients優先序錯誤，請聯絡管理員", function(){}, "提醒", "確定");
+					}
+				},
+				error : function() {
+					console.log("錯誤訊息");
+				}
+			});
+	    }
+		</script>
+		
+
+		<!------------------------------------------------------------------cordova和QR CODE掃描相關js------------------------------------------------>
+        
+		<script type="text/javascript" charset="utf-8" src="js/QRCodeScannerHandler.js"></script>
+		<script type="text/javascript" charset="utf-8" src="js/FamilyQRCodeScannerHandler.js"></script>
+		<script type="text/javascript" charset="utf-8" src="js/pushToBBDPDoctor.js"></script>
+		<!------------------------------------------------------------------cordova和QR CODE掃描相關js------------------------------------------------>
+		
+		
+		<style type="text/css">
+			.checkImg:hover{ position:relative; top:1px; left:1px;}
+		</style>
+	</head>
+	<body>	
+		<center>	
+		<div class="col-xs-12 col-sm-12" style="padding-top: 2vw;">
+			<img src="img/logo.png" style="width: 90%;height: auto;">
+		</div>
+		<div class="col-xs-12 col-sm-12" style="padding-top: 2vw; padding-bottom: 4vw;">
+			<div class="row checkImg" style="background:#FFFDDB;" onclick="location.href='RevisitTimeList.html'">
+				<div class="col-xs-2 col-sm-2" style="padding-top:5vw;padding-bottom:5vw;">
+					<img src="img/revisitTime.png" width="100%" height="auto">
+				</div>
+				<div class="col-xs-10 col-sm-10" style="padding-top:2vw;">
+					<p class="basicText" id="latestRevisitTime" style="color:#000000;text-align: left;">目前尚無回診時間</p>
+				</div>
+			</div>
+		</div>
+		<div class="col-xs-12 col-sm-12">
+			<div class="row" style="margin-bottom:3vw;">
+				<div class="col-xs-4 col-sm-4 checkImg">
+					<a href="QuestionnaireList.html" style="text-decoration:none;"><div class="img"><img src="img/questionnaire.png" width="70%" height="auto"></div><p class="basicText">我的問卷</p></a>
+				</div>
+				<div class="col-xs-4 col-sm-4 checkImg">	
+					<a href="Folder.html" style="text-decoration:none;"><div class="img"><img src="img/folder.png" width="70%" height="auto"></div><p class="basicText">我的檔案</p></a>
+				</div>
+				<div class="col-xs-4 col-sm-4 checkImg">
+					<a href="HealthTrackingList.html" style="text-decoration:none;"><div class="img"><img src="img/healthTracking.png" width="70%" height="auto"></div><p class="basicText">健康追蹤</p></a>
+				</div>
+			</div>
+			<div class="row" style="margin-bottom:3vw;">
+				<div class="col-xs-4 col-sm-4 checkImg">
+					<a href="MedicalRecordSearch.html" style="text-decoration:none;"><div class="img"><img src="img/medicalRecord.png" width="70%" height="auto"></div><p class="basicText">我的病歷</p></a>
+				</div>	
+				<div class="col-xs-4 col-sm-4 checkImg">
+					<a href="Notice.html" style="text-decoration:none;"><div class="img"><img src="img/notice.png" width="70%" height="auto"></div><p class="basicText">注意事項</p></a>
+				</div>
+				<div class="col-xs-4 col-sm-4 checkImg">
+					<a href="Information.html" style="text-decoration:none;"><div class="img"><img src="img/information.png" width="70%" height="auto"></div><p class="basicText">資訊平台</p></a>
+				</div>
+			</div>
+			<div class="row" style="margin-bottom:1vw;">
+				<div class="col-xs-4 col-sm-4 checkImg">
+					<a href="FamilyList.html" style="text-decoration:none;"><div class="img"><img src="img/family.png" width="70%" height="auto"></div><p class="basicText">我的家屬</p></a>
+				</div>
+				<div class="col-xs-4 col-sm-4 checkImg">
+					<div class="img" onclick="scan();"><img src="img/QRCode.png" width="70%" height="auto"></div><p class="basicText">看診掃描</p>
+				</div>
+				<div class="col-xs-4 col-sm-4 checkImg">	
+					<a href="Setting.html" style="text-decoration:none;"><div class="img"><img src="img/setting.png" width="70%" height="auto"></div><p class="basicText">帳戶設定</p></a>
+				</div>
+			</div>
+		</div>
+		</center>		
+		<script>
+			getLatestRevisitTime();		//取得最近回診時間
+		</script>
+	</body>
+</html>
+

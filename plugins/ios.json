@@ -1,0 +1,60 @@
+{
+    "prepare_queue": {
+        "installed": [],
+        "uninstalled": []
+    },
+    "config_munge": {
+        "files": {}
+    },
+    "installed_plugins": {
+        "cordova-plugin-camera": {
+            "CAMERA_USAGE_DESCRIPTION": " ",
+            "PHOTOLIBRARY_USAGE_DESCRIPTION": " ",
+            "PACKAGE_NAME": "bbdp.patient.view"
+        },
+        "cordova-plugin-compat": {
+            "PACKAGE_NAME": "bbdp.patient.view"
+        },
+        "cordova-plugin-crop": {
+            "PACKAGE_NAME": "bbdp.patient.view"
+        },
+        "cordova-plugin-dialogs": {
+            "PACKAGE_NAME": "bbdp.patient.view"
+        },
+        "cordova-plugin-file": {
+            "PACKAGE_NAME": "bbdp.patient.view"
+        },
+        "cordova-plugin-file-transfer": {
+            "PACKAGE_NAME": "bbdp.patient.view"
+        },
+        "cordova-plugin-media-capture": {
+            "CAMERA_USAGE_DESCRIPTION": " ",
+            "MICROPHONE_USAGE_DESCRIPTION": " ",
+            "PHOTOLIBRARY_USAGE_DESCRIPTION": " ",
+            "PACKAGE_NAME": "bbdp.patient.view"
+        },
+        "cordova-plugin-spinner-dialog": {
+            "PACKAGE_NAME": "bbdp.patient.view"
+        },
+        "cordova-plugin-whitelist": {
+            "PACKAGE_NAME": "bbdp.patient.view"
+        },
+        "phonegap-plugin-barcodescanner": {
+            "CAMERA_USAGE_DESCRIPTION": " ",
+            "PACKAGE_NAME": "bbdp.patient.view"
+        },
+        "cordova-plugin-device": {
+            "PACKAGE_NAME": "bbdp.patient.view"
+        },
+        "cordova-plugin-statusbar": {
+            "PACKAGE_NAME": "bbdp.patient.view"
+        },
+        "cordova-plugin-fcm": {
+            "PACKAGE_NAME": "com.bbdp.patient"
+        },
+        "cordova-plugin-splashscreen": {
+            "PACKAGE_NAME": "com.bbdp.patient"
+        }
+    },
+    "dependent_plugins": {}
+}

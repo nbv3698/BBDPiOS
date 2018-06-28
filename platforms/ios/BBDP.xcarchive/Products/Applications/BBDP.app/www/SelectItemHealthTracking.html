@@ -1,0 +1,38 @@
+<html>
+	<head>
+		<title>BBDP</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+		<script type="text/javascript" src="js/FCMPushHandler.js"></script> <!-- 提醒推播 -->
+		<script type="text/javascript" src="cordova.js"></script> <!-- Cordova套件 -->		
+		<link rel="stylesheet" type="text/css" href="css/frame.css">
+		<link rel="stylesheet" type="text/css" href="css/pinkButton.css">	<!-- pinkButton css -->
+		<script>	
+			document.addEventListener("backbutton", onBackKeyDown, false); 	//偵測事件  
+			function onBackKeyDown() {  		//返回按鈕    
+				window.location.href = 'HealthTrackingList.html';
+			}
+		</script>
+
+	</head>
+	<body>
+		<div class=" text-center title">
+			<a href="HealthTrackingList.html"><img src="img/backButton.png"  style="float:left;width:10vw;height:10vw;"></a>	
+			<img src="img/healthTracking.png" style="vertical-align:middle;width:10vw;height:10vw;">
+			<h1  style="display:inline;">健康狀況追蹤</h1>
+			<img src="img/background.png" style="float:right;width:10vw;height:10vw;">
+		</div>
+		<div style="height:15vw;"></div>
+		<div id = "display">
+		<!--------------------------------------內容----------------------------------------------->
+
+		</div>
+		
+		<script type="text/javascript" src="js/SelectItemHealthTracking.js"></script>	<!-- SelectItemHealthTracking.js -->
+		
+	</body>
+</html>
+

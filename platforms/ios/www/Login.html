@@ -1,0 +1,57 @@
+<html>
+<head>
+<title>BBDP</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet"
+	href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+<script
+	src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+<script
+	src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+<script type="text/javascript" src="cordova.js"></script> <!-- Cordova套件 -->			
+<link rel="stylesheet" type="text/css" href="css/frame.css">	
+<script>
+	document.addEventListener("backbutton", onBackKeyDown, false); 	//偵測事件  
+	function onBackKeyDown() {  		//返回按鈕    
+		navigator.notification.confirm('確定關閉BBDP', showConfirm, '離開', '確定,取消');
+	}
+
+	
+	function showConfirm(button){
+		if( button==1 ){
+			navigator.app.exitApp();//退出app程序
+		}
+	}	
+</script>
+
+</head>
+<body>
+	<div class="col-xs-12 col-sm-12">
+		<!--------------------------------------內容----------------------------------------------->
+		<div class="col-xs-12 col-sm-12" style="margin-top: 15vw;margin-bottom: 15vw;color: #FF5E5B;  font-size: 3vw;">
+			<img class="img-responsive" src="img/logo.png" />
+			<center>Bridge Between Doctor and Patient</center>
+		</div>
+		<center>
+			<p  class="basicText" style="display:inline;vertical-align:middle;">帳號：</p>
+			<input type="text" class="form-control inputLg" style="display:inline;vertical-align:middle;width:65vw;" placeholder="身分證字號" id="account" />
+			<div style="height:6vw;"></div>
+			<p  class="basicText" style="display:inline;vertical-align:middle;">密碼：</p>
+			<input type="password" class="form-control inputLg" style="display:inline;vertical-align:middle;width:65vw;" id="password" />
+			<div style="height:6vw;"></div>
+			<button type="button" class="btn btn-pink btn-lg" style="outline: none;" onclick="javascript:location.href='Register.html'" >註冊</button>
+			<button type="button" class="btn btn-pink btn-lg" style="margin-left:15vw;outline: none;" id="doAjaxBtn">登入</button>
+
+			<div style="height:6vw;"></div>
+			<button type="button" class="btn btn-link" style="outline: none;">
+				<span style="text-decoration: underline; color:#666666;font-size:4.5vw" onclick="javascript:location.href='ForgotPassword.html'">忘記密碼</span>
+			</button>
+		</center>
+		<!--------------------------------------內容----------------------------------------------->
+	</div>	
+	
+	<script type="text/javascript" src="js/login.js"></script>	<!-- login.js -->
+</body>
+</html>
+

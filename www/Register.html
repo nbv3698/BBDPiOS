@@ -1,0 +1,66 @@
+<html>
+<head>
+<title>BBDP</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet"
+	href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+<script
+	src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+<script
+	src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+<link rel="stylesheet" type="text/css" href="css/frame.css">
+<script type="text/javascript" src="js/FCMPushHandler.js"></script> <!-- 提醒推播 -->
+		<script type="text/javascript" src="cordova.js"></script> <!-- Cordova套件 -->		
+<script>
+	document.addEventListener("backbutton", onBackKeyDown, false); 	//偵測事件  
+	function onBackKeyDown() {  		//返回按鈕    
+		window.location.href = 'Login.html';
+	}
+</script>	
+	
+</head>
+	<body>
+		<div class=" text-center title">
+			<a href="Login.html"><img src="img/backButton.png"  style="float:left;width:10vw;height:10vw;"></a>
+			<img src="img/register.png" style="vertical-align:middle;width:10vw;height:10vw;">
+			<h1 style="display: inline;">註冊</h1>
+			<img src="img/background.png" style="float:right;width:10vw;height:10vw;">
+		</div>
+		<div style="height:15vw;"></div>
+		<div class="col-xs-12 col-sm-12">
+		<!--------------------------------------內容----------------------------------------------->
+		<center>
+			<div style="height:10vw;"></div>
+			<p class="basicText" style="display:inline;vertical-align:middle;">帳號：</p>
+			<input type="text" class="form-control inputLg" style="display:inline;width:65vw;vertical-align:middle;" id="account" placeholder="身分證字號">
+			<div style="height:6vw;"></div>
+			<p class="basicText" style="display:inline;vertical-align:middle;">姓名：</p>
+			<input type="text" class="form-control inputLg" style="display:inline;width:65vw;vertical-align:middle;" placeholder="請輸入姓名" id="name" />
+			<div style="height:6vw;"></div>
+			<p class="basicText" style="display:inline;vertical-align:middle;">生日：</p>
+			<input type="date" class="form-control inputLg" style="display:inline;width:65vw;vertical-align:middle;" id="birthday" placeholder="請選擇生日"/>
+			<div style="height:6vw;"></div>			
+			<p class="basicText" style="display:inline;vertical-align:middle;">密碼：</p>
+			<input type="password" class="form-control inputLg" style="display:inline;width:65vw;vertical-align:middle;" placeholder="請輸入密碼 (介於6~15字元間)" id="password" />
+			<div style="height:6vw;"></div>
+			<p class="basicText" style="display:inline;vertical-align:middle;">確認密碼：</p>
+			<input type="password" class="form-control inputLg" style="display:inline;width:55vw;vertical-align:middle;" placeholder="再一次輸入密碼" id="passwordCheck" />
+			<div style="height:6vw;"></div>
+			<input type="checkbox" id="agree" name="agree" style="width:6vw;height:6vw;display:inline;vertical-align:middle;">
+
+			<!--  同意 modal start -->
+			<a role="button" onclick="linkConfirm()" style="outline: none;"> 
+				<p class="basicText" style="text-decoration:underline;color:#666666;display:inline;vertical-align:middle;">同意條款連結</p>
+			</a>
+			<div style="height:6vw;"></div>		
+			<button type="submit" class="btn btn-pink btn-lg" id="register" style="outline: none;" onclick="">送出</button>
+			<div style="height:6vw;"></div>		
+			
+		</center>
+		<!--------------------------------------內容----------------------------------------------->
+		</div>
+		
+		<script type="text/javascript" src="js/register.js"></script>	<!-- register.js -->
+</body>
+</html>

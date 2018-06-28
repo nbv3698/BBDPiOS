@@ -1,0 +1,231 @@
+<html>
+	<head>
+		<title>BBDP</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+		<script type="text/javascript" src="js/FCMPushHandler.js"></script> <!-- 提醒推播 -->
+		<script type="text/javascript" src="cordova.js"></script> <!-- Cordova套件 -->	
+		<link rel="stylesheet" type="text/css" href="css/frame.css">
+	</head>
+	<body>
+		<div class=" text-center title">
+			<a href="QuestionnaireList.html"><img src="img/backButton.png"  style="float:left;width:10vw;height:10vw;"></a>		
+			<img src="img/questionnaire.png" style="vertical-align:middle;width:10vw;height:10vw;">
+			<h1  style="display:inline;">我的問卷</h1>
+			<img src="img/background.png" style="float:right;width:10vw;height:10vw;">
+		</div>
+		<div style="height:15vw;"></div>
+		<div class="col-xs-12 col-sm-12">
+			
+			<center>
+				<div style="height:6vw;"></div>
+				<p class="basicText" style="display:inline;vertical-align:middle;">醫院：</p>
+				<select class="form-control inputLg" id="hospital"style="display:inline;vertical-align:middle;width:65vw;" onChange="changeHospital()">
+					<option value="">請選擇</option>
+				</select>
+				<div style="height:6vw;"></div>
+				<p class="basicText" style="display:inline;vertical-align:middle;">科別：</p>
+				<select class="form-control inputLg" id="department" onChange="changeDepartment()" style="display:inline;width:65vw;" disabled="disabled">
+					<option value="">請選擇</option>
+				</select>	
+				<div style="height:6vw;"></div>
+				<p class="basicText" style="display:inline;vertical-align:middle;">醫師：</p>
+				<select class="form-control inputLg" id="doctor" onChange="changeDoctor()" style="display:inline;vertical-align:middle;width:65vw;" disabled="disabled">
+					<option value="">請選擇</option>
+				</select>
+				<div style="height:6vw;"></div>
+				<p class="basicText" style="display:inline;vertical-align:middle;">症狀：</p>
+				<select class="form-control inputLg" id="symptom" style="display:inline;vertical-align:middle;width:65vw;" disabled="disabled" onChange="changeSymptom()">
+					<option value="">請選擇</option>
+				</select>
+				<div style="height:6vw;"></div>
+				<button type="submit" id = "send" class="btn btn-pink btn-lg" style="outline: none;" onClick="goToQuestionnaire()" disabled="disabled">確認</button>
+				<div style="height:6vw;"></div>
+			</center>
+		</div>
+		<script>
+			var servletUrl = "http://140.121.197.130:8004/BBDPPatient/";
+			var patientID = window.localStorage.getItem('login');
+			document.addEventListener("backbutton", onBackKeyDown, false); 	//偵測事件  
+			function onBackKeyDown() {  		//返回按鈕    
+				window.location.href = 'QuestionnaireList.html';
+			}
+			$(document).ready(function() {
+				$.ajax({
+					url : servletUrl+"QuestionnaireServlet",
+					data : {
+						state : "searchHospital",
+					},
+					dataType : "json",
+						
+					success : function(response) {
+						var temp="<option value=''>請選擇</option>";
+						$("#department").empty().append(temp);
+						$("#hospital").empty().append(temp);
+						for(var i=0;i<response.length;i++){
+							temp+="<option value='"+response[i]+"'>"+response[i]+"</option>";
+						}	
+						$("#hospital").empty().append(temp);
+						$("#department").empty().append("<option value=''>請選擇</option>");
+						$("#doctor").empty().append("<option value=''>請選擇</option>");
+						$("#symptom").empty().append("<option value=''>請選擇</option>");
+					},
+					error : function() {
+						console.log("錯誤訊息");
+					}		
+				});					
+			});
+
+			function changeHospital(){
+				if($('#hospital option:selected').val()){
+					$('#department').attr('disabled', false);
+					$('#doctor').attr('disabled', true);
+					$('#symptom').attr('disabled', true);	
+					$('#send').attr('disabled', true);					
+				}else{
+					$('#department').attr('disabled', true);
+					$('#doctor').attr('disabled', true);
+					$('#symptom').attr('disabled', true);
+					$('#send').attr('disabled', true);					
+				}
+				$("#department").empty().append("<option value=''>請選擇</option>");
+				$("#doctor").empty().append("<option value=''>請選擇</option>");
+				$("#symptom").empty().append("<option value=''>請選擇</option>");
+				if($('#hospital option:selected').val()){
+					$.ajax({
+						url : servletUrl+"QuestionnaireServlet",
+						data : {
+							state : "searchDepartment",
+							hospital : $('#hospital option:selected').val()
+						},
+						dataType : "json",
+						
+						success : function(response) {
+							var temp="";
+							for(var i=0;i<response.length;i++){
+								temp+="<option value='"+response[i]+"'>"+response[i]+"</option>";
+							}	
+							$("#department").append(temp);
+						},
+						error : function() {
+							console.log("錯誤訊息");
+						}
+						
+					});		
+				}			
+			
+			
+			}
+			
+			function changeDepartment(){
+				if($('#department option:selected').val()){
+					$('#doctor').attr('disabled', false);
+					$('#symptom').attr('disabled', true);
+					$('#send').attr('disabled', true);					
+				}else{
+					$('#doctor').attr('disabled', true);
+					$('#symptom').attr('disabled', true);
+					$('#send').attr('disabled', true);					
+				}
+				$("#doctor").empty().append("<option value=''>請選擇</option>");
+				$("#symptom").empty().append("<option value=''>請選擇</option>");
+				if($('#department option:selected').val()){
+					$.ajax({
+						url : servletUrl+"QuestionnaireServlet",
+						data : {
+							state : "searchDoctor",
+							hospital : $('#hospital option:selected').val(),
+							department : $('#department option:selected').val()
+						},
+						dataType : "json",
+						
+						success : function(response) {
+							var temp="";
+							for(var i=0;i<response.length;i+=2){
+								temp+="<option value='"+response[i]+"'>"+response[i+1]+"</option>";
+							}	
+							$("#doctor").append(temp);
+						},
+						error : function() {
+							console.log("錯誤訊息");
+						}
+						
+					});		
+				}	
+			}
+
+			function changeDoctor(){
+				$('#symptom').attr('disabled', true);
+				$('#send').attr('disabled', true);	
+				$("#symptom").empty().append("<option value=''>請選擇</option>");
+				if($('#doctor option:selected').val()){
+					$.ajax({
+						url : servletUrl+"QuestionnaireServlet",
+						data : {
+							state : "searchSymptom",
+							doctorID : $('#doctor option:selected').val()
+						},
+						dataType : "json",
+						
+						success : function(response) {
+							var temp = "";
+							if(response.length>0){
+								$('#symptom').attr('disabled', false);
+								for(var i=0;i<response.length;i++){
+									temp+="<option value='"+response[i]+"'>"+response[i]+"</option>";
+								}						
+							}else{
+								navigator.notification.alert("醫師尚未建立問卷", null, "提醒", "確定");
+							}
+							$("#symptom").append(temp);
+						},
+						error : function() {
+							console.log("錯誤訊息");
+						}
+						
+					});		
+				}	
+			}
+
+			function changeSymptom(){
+				if($('#symptom option:selected').val())
+					$('#send').attr('disabled', false);			
+				else
+					$('#send').attr('disabled', true);		
+			}
+			
+			function goToQuestionnaire(){
+				$.ajax({
+					url : servletUrl+"QuestionnaireServlet",
+					data : {
+						state : "searchQuestionnaireID",
+						doctorID : $('#doctor option:selected').val(),
+						symptom : htmlEscapeCharacter($('#symptom option:selected').val())
+					},
+					dataType : "json",
+					
+					success : function(response) {
+						window.location.href = 'FillInQuestionnaire.html?QID='+response+'&DID='+$('#doctor option:selected').val()+'&UNID=0';
+					},
+					error : function() {
+						console.log("錯誤訊息");
+					}
+					
+				});						
+			}
+			function htmlEscapeCharacter(str){
+				str = str.replace(/\'/g, "&#39;");
+				str = str.replace(/\"/g, "&#34;");
+				str = str.replace(/\\/g, "&#92;");
+				return str;
+			}
+
+		</script>
+	</body>
+</html>
+
+
+
